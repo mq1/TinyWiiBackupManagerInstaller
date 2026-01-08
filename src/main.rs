@@ -123,7 +123,7 @@ impl State {
             State::Uninstalled => text("TinyWiiBackupManager successfully uninstalled").into(),
         };
 
-        container(content).center(Length::Fill).into()
+        container(content).center(Length::Fill).padding(10).into()
     }
 
     fn update(&mut self, message: Message) -> Task<Message> {
@@ -181,7 +181,7 @@ impl State {
 
 fn main() -> iced::Result {
     iced::application(State::new, State::update, State::view)
-        .window_size(Size::new(400.0, 300.0))
+        .window_size(Size::new(500.0, 300.0))
         .resizable(false)
         .title("Install TinyWiiBackupManager")
         .run()
