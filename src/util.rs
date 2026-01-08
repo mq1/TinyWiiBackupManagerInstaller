@@ -1,18 +1,16 @@
 // SPDX-FileCopyrightText: 2026 Manuel Quarneti <mq1@ik.me>
 // SPDX-License-Identifier: GPL-3.0-only
 
-use std::{env, io, process::Command};
+use std::{env, process::Command};
 
-pub fn get_download_url(version: &str, os: Os, arch: Arch) -> io::Result<String> {
-    let url = format!(
+pub fn get_download_url(version: &str, os: Os, arch: Arch) -> String {
+    format!(
         "https://github.com/mq1/TinyWiiBackupManager/releases/download/v{}/TinyWiiBackupManager-v{}-{}-{}.zip",
         version,
         version,
         os.as_str(),
         arch.as_str()
-    );
-
-    Ok(url)
+    )
 }
 
 pub async fn get_latest_version() -> Result<String, String> {
@@ -66,7 +64,8 @@ pub fn get_os() -> Os {
 pub enum Arch {
     I686,
     X86_64,
-    AARCH64,
+    X86_64v3,
+    Aarch64,
 }
 
 impl Arch {
@@ -74,7 +73,8 @@ impl Arch {
         match self {
             Arch::I686 => "x86",
             Arch::X86_64 => "x86_64",
-            Arch::AARCH64 => "arm64",
+            Arch::X86_64v3 => "x86_64-v3",
+            Arch::Aarch64 => "arm64",
         }
     }
 
@@ -82,15 +82,25 @@ impl Arch {
         match self {
             Arch::I686 => "x86 (32-bit)",
             Arch::X86_64 => "x86 (64-bit)",
-            Arch::AARCH64 => "ARM64",
+            Arch::X86_64v3 => "x86 (64-bit with AVX2 instructions)",
+            Arch::Aarch64 => "ARM64",
         }
     }
 }
 
 pub fn get_arch() -> Arch {
     match env::var("PROCESSOR_ARCHITEW6432").as_deref() {
-        Ok("AMD64") => Arch::X86_64,
-        Ok("ARM64") => Arch::AARCH64,
+        Ok("AMD64") => {
+            if std::is_x86_feature_detected!("avx2")
+                && std::is_x86_feature_detected!("fma")
+                && std::is_x86_feature_detected!("bmi2")
+            {
+                Arch::X86_64v3
+            } else {
+                Arch::X86_64
+            }
+        }
+        Ok("ARM64") => Arch::Aarch64,
         _ => Arch::I686,
     }
 }
