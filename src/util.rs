@@ -1,30 +1,33 @@
 // SPDX-FileCopyrightText: 2026 Manuel Quarneti <mq1@ik.me>
 // SPDX-License-Identifier: GPL-3.0-only
 
+use anyhow::Result;
 use std::os::windows::process::CommandExt;
 use std::{env, fs, io::Cursor, path::Path, process::Command};
 use zip::ZipArchive;
 
-pub async fn install(version: String, bytes: Vec<u8>) -> Result<String, String> {
+use crate::reg;
+
+pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
     // Open the archive
     let cursor = Cursor::new(bytes);
-    let mut archive = ZipArchive::new(cursor).map_err(|e| e.to_string())?;
+    let mut archive = ZipArchive::new(cursor)?;
 
-    let appdata = env::var("APPDATA").map_err(|e| e.to_string())?;
-    let localappdata = env::var("LOCALAPPDATA").map_err(|e| e.to_string())?;
-    let userprofile = env::var("USERPROFILE").map_err(|e| e.to_string())?;
+    let appdata = env::var("APPDATA")?;
+    let localappdata = env::var("LOCALAPPDATA")?;
+    let userprofile = env::var("USERPROFILE")?;
     let install_dir = Path::new(&localappdata).join("TinyWiiBackupManager");
 
     // Remove existing install
     if install_dir.exists() {
-        fs::remove_dir_all(&install_dir).map_err(|e| e.to_string())?;
-        fs::create_dir(&install_dir).map_err(|e| e.to_string())?;
+        fs::remove_dir_all(&install_dir)?;
+        fs::create_dir(&install_dir)?;
     } else {
-        fs::create_dir_all(&install_dir).map_err(|e| e.to_string())?;
+        fs::create_dir_all(&install_dir)?;
     }
 
     // Extract the dist .zip into the install dir
-    archive.extract(&install_dir).map_err(|e| e.to_string())?;
+    archive.extract(&install_dir)?;
 
     // Find the executable
     let exe_path = install_dir.join("TinyWiiBackupManager.exe");
@@ -32,20 +35,25 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String, String> 
         return Err("Executable not found in extracted archive".to_string());
     }
 
+    // Copy the uninstaller
+    if let (installer_path) = std::env::current_exe() {
+        fs::copy(installer_path, install_dir.join("uninstall.exe"))?;
+    }
+
+    reg::install_reg_keys(&version, &install_dir)?;
+
     // Create shortcut on the desktop
     let shortcut_path = Path::new(&userprofile)
         .join("Desktop")
         .join("TinyWiiBackupManager.lnk");
 
     if shortcut_path.exists() {
-        fs::remove_file(&shortcut_path).map_err(|e| e.to_string())?;
+        fs::remove_file(&shortcut_path)?;
     }
 
-    let mut shortcut = mslnk::ShellLink::new(&exe_path).map_err(|e| e.to_string())?;
+    let mut shortcut = mslnk::ShellLink::new(&exe_path)?;
     shortcut.set_working_dir(Some(install_dir.to_string_lossy().to_string()));
-    shortcut
-        .create_lnk(&shortcut_path)
-        .map_err(|e| e.to_string())?;
+    shortcut.create_lnk(&shortcut_path)?;
 
     // Create Start Menu shortcut
     let start_menu_dir = Path::new(&appdata)
@@ -58,16 +66,14 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String, String> 
     let start_menu_shortcut = start_menu_dir.join("TinyWiiBackupManager.lnk");
 
     if start_menu_shortcut.exists() {
-        fs::remove_file(&start_menu_shortcut).map_err(|e| e.to_string())?;
+        fs::remove_file(&start_menu_shortcut)?;
     } else {
-        fs::create_dir_all(&start_menu_dir).map_err(|e| e.to_string())?;
+        fs::create_dir_all(&start_menu_dir)?;
     }
 
-    let mut shortcut = mslnk::ShellLink::new(&exe_path).map_err(|e| e.to_string())?;
+    let mut shortcut = mslnk::ShellLink::new(&exe_path)?;
     shortcut.set_working_dir(Some(install_dir.to_string_lossy().to_string()));
-    shortcut
-        .create_lnk(&start_menu_shortcut)
-        .map_err(|e| e.to_string())?;
+    shortcut.create_lnk(&start_menu_shortcut)?;
 
     Ok(version)
 }
@@ -83,21 +89,16 @@ pub fn is_installed() -> bool {
         .exists()
 }
 
-pub async fn uninstall() -> Result<(), String> {
-    let appdata = env::var("APPDATA").map_err(|e| e.to_string())?;
-    let localappdata = env::var("LOCALAPPDATA").map_err(|e| e.to_string())?;
-    let userprofile = env::var("USERPROFILE").map_err(|e| e.to_string())?;
-
-    let install_dir = Path::new(&localappdata).join("TinyWiiBackupManager");
-    if install_dir.exists() {
-        fs::remove_dir_all(&install_dir).map_err(|e| e.to_string())?;
-    }
+pub fn uninstall(is_uninstaller: bool) -> Result<()> {
+    let appdata = env::var("APPDATA")?;
+    let localappdata = env::var("LOCALAPPDATA")?;
+    let userprofile = env::var("USERPROFILE")?;
 
     let shortcut_path = Path::new(&userprofile)
         .join("Desktop")
         .join("TinyWiiBackupManager.lnk");
     if shortcut_path.exists() {
-        fs::remove_file(&shortcut_path).map_err(|e| e.to_string())?;
+        fs::remove_file(&shortcut_path)?;
     }
 
     let start_menu_dir = Path::new(&appdata)
@@ -107,18 +108,29 @@ pub async fn uninstall() -> Result<(), String> {
         .join("Programs")
         .join("TinyWiiBackupManager");
     if start_menu_dir.exists() {
-        fs::remove_dir_all(&start_menu_dir).map_err(|e| e.to_string())?;
+        fs::remove_dir_all(&start_menu_dir)?;
     }
 
     let data_dir = Path::new(&appdata).join("mq1").join("TinyWiiBackupManager");
     if data_dir.exists() {
-        fs::remove_dir_all(&data_dir).map_err(|e| e.to_string())?;
+        fs::remove_dir_all(&data_dir)?;
+    }
+
+    reg::remove_reg_keys();
+
+    let install_dir = Path::new(&localappdata).join("TinyWiiBackupManager");
+    if is_uninstaller {
+        self_destruct(&install_dir)?;
+    } else {
+        if install_dir.exists() {
+            fs::remove_dir_all(&install_dir)?;
+        }
     }
 
     Ok(())
 }
 
-pub async fn download(version: String, os: Os, arch: Arch) -> Result<(String, Vec<u8>), String> {
+pub async fn download(version: String, os: Os, arch: Arch) -> Result<(String, Vec<u8>)> {
     let url = format!(
         "https://github.com/mq1/TinyWiiBackupManager/releases/download/v{}/TinyWiiBackupManager-v{}-{}-{}.zip",
         &version,
@@ -127,22 +139,17 @@ pub async fn download(version: String, os: Os, arch: Arch) -> Result<(String, Ve
         arch.as_str()
     );
 
-    let bytes = minreq::get(&url)
-        .send()
-        .map_err(|e| e.to_string())?
-        .into_bytes();
+    let bytes = minreq::get(&url).send()?.into_bytes();
 
     Ok((version, bytes))
 }
 
-pub async fn get_latest_version() -> Result<String, String> {
+pub async fn get_latest_version() -> Result<String> {
     let version = minreq::get(
         "https://github.com/mq1/TinyWiiBackupManager/releases/latest/download/version.txt",
     )
-    .send()
-    .map_err(|e| e.to_string())?
-    .as_str()
-    .map_err(|e| e.to_string())?
+    .send()?
+    .as_str()?
     .to_string();
 
     Ok(version)
@@ -226,4 +233,20 @@ pub fn get_arch() -> Arch {
         Ok("ARM64") => Arch::Aarch64,
         _ => Arch::I686,
     }
+}
+
+pub fn self_destruct(install_dir: &Path) -> Result<()> {
+    let cmd_str = format!(
+        "ping 127.0.0.1 -n 3 > nul & rmdir /s /q \"{}\"",
+        install_dir.to_string_lossy()
+    );
+
+    // Spawn the CMD process independent of this Rust process
+    Command::new("cmd")
+        .args(["/C", &cmd_str])
+        .creation_flags(0x08000000) // CREATE_NO_WINDOW (run invisibly)
+        .spawn()
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
 }

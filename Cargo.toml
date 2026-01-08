@@ -1,6 +1,6 @@
 [package]
 name = "TinyWiiBackupManagerInstaller"
-version = "0.1.0-alpha.2"
+version = "0.1.0-beta"
 edition = "2024"
 rust-version = "1.92"
 authors = ["Manuel Quarneti <mq1@ik.me>"]
@@ -16,6 +16,7 @@ zip = { version = "7", default-features = false, features = [
   "deflate-flate2-zlib-rs",
 ] }
 mslnk = "0.1"
+anyhow = "1"
 
 [profile.release]
 opt-level = "z"

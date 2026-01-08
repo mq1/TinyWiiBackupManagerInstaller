@@ -4,12 +4,15 @@
 #![warn(clippy::all, rust_2018_idioms)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
+mod reg;
 mod style;
 mod util;
 
 use crate::util::{Arch, Os};
+use anyhow::Result;
 use iced::{
     Alignment, Element, Length, Size, Task,
+    futures::TryFutureExt,
     widget::{button, column, container, row, space, text},
 };
 
@@ -147,12 +150,18 @@ impl State {
             }
             Message::Download(version, os, arch) => {
                 *self = State::Downloading(version.clone());
-                Task::perform(util::download(version, os, arch), Message::Downloaded)
+                Task::perform(
+                    async move { util::download(version, os, arch).map_err(|e| e.to_string()) },
+                    Message::Downloaded,
+                )
             }
             Message::Downloaded(res) => match res {
                 Ok((version, bytes)) => {
                     *self = State::Installing(version.clone());
-                    Task::perform(util::install(version, bytes), Message::Installed)
+                    Task::perform(
+                        async move { util::install(version, bytes).map_err(|e| e.to_string()) },
+                        Message::Installed,
+                    )
                 }
                 Err(e) => {
                     *self = State::Errored(e);
@@ -175,7 +184,10 @@ impl State {
             }
             Message::Uninstall => {
                 *self = State::Uninstalling;
-                Task::perform(util::uninstall(), Message::Uninstalled)
+                Task::perform(
+                    async { util::uninstall(false).map_err(|e| e.to_string()) },
+                    Message::Uninstalled,
+                )
             }
             Message::Uninstalled(res) => {
                 match res {
@@ -188,10 +200,21 @@ impl State {
     }
 }
 
-fn main() -> iced::Result {
+fn main() -> Result<()> {
+    if std::env::current_exe()
+        .ok()
+        .and_then(|p| p.file_name())
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name == "uninstall.exe")
+    {
+        return util::uninstall(true);
+    }
+
     iced::application(State::new, State::update, State::view)
         .window_size(Size::new(500.0, 300.0))
         .resizable(false)
         .title("Install TinyWiiBackupManager")
-        .run()
+        .run()?;
+
+    Ok(())
 }
