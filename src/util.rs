@@ -41,6 +41,10 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String, String> 
         .join("Desktop")
         .join("TinyWiiBackupManager.lnk");
 
+    if shortcut_path.exists() {
+        fs::remove_file(&shortcut_path).map_err(|e| e.to_string())?;
+    }
+
     let mut shortcut = mslnk::ShellLink::new(&exe_path).map_err(|e| e.to_string())?;
     shortcut.set_working_dir(Some(install_dir.to_string_lossy().to_string()));
     shortcut
@@ -55,9 +59,13 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String, String> 
         .join("Programs")
         .join("TinyWiiBackupManager");
 
-    fs::create_dir_all(&start_menu_dir).map_err(|e| e.to_string())?;
-
     let start_menu_shortcut = start_menu_dir.join("TinyWiiBackupManager.lnk");
+
+    if start_menu_shortcut.exists() {
+        fs::remove_file(&start_menu_shortcut).map_err(|e| e.to_string())?;
+    } else {
+        fs::create_dir_all(&start_menu_dir).map_err(|e| e.to_string())?;
+    }
 
     let mut shortcut = mslnk::ShellLink::new(&exe_path).map_err(|e| e.to_string())?;
     shortcut.set_working_dir(Some(install_dir.to_string_lossy().to_string()));
