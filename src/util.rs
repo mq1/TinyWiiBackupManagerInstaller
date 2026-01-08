@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Manuel Quarneti <mq1@ik.me>
 // SPDX-License-Identifier: GPL-3.0-only
 
+use std::os::windows::process::CommandExt;
 use std::{env, fs, io::Cursor, path::Path, process::Command};
 use zip::ZipArchive;
 
@@ -165,6 +166,7 @@ impl Os {
 pub fn get_os() -> Os {
     if Command::new("cmd")
         .args(["/c", "ver"])
+        .creation_flags(0x08000000)
         .output()
         .is_ok_and(|o| String::from_utf8_lossy(&o.stdout).contains("Version 10"))
     {
