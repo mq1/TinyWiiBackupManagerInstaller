@@ -15,6 +15,7 @@ use iced::{
     futures::TryFutureExt,
     widget::{button, column, container, row, space, text},
 };
+use std::ffi::OsStr;
 
 enum State {
     FetchingLatestVersion,
@@ -187,10 +188,7 @@ impl State {
             }
             Message::Uninstall => {
                 *self = State::Uninstalling;
-                Task::perform(
-                    util::uninstall_fut().map_err(|e| e.to_string()),
-                    Message::Uninstalled,
-                )
+                Task::perform(util::uninstall_future(), Message::Uninstalled)
             }
             Message::Uninstalled(res) => {
                 match res {
@@ -204,11 +202,9 @@ impl State {
 }
 
 fn main() -> Result<()> {
-    if std::env::current_exe()
-        .ok()
-        .and_then(|p| p.file_name())
-        .and_then(|name| name.to_str())
-        .is_some_and(|name| name == "uninstall.exe")
+    if let Ok(path) = std::env::current_exe()
+        && let Some(name) = path.file_name().and_then(OsStr::to_str)
+        && name == "uninstall.exe"
     {
         return util::uninstall(true);
     }

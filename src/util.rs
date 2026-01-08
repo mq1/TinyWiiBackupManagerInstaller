@@ -89,8 +89,8 @@ pub fn is_installed() -> bool {
         .exists()
 }
 
-pub async fn uninstall_fut() -> Result<()> {
-    uninstall(false)
+pub async fn uninstall_future() -> Result<(), String> {
+    uninstall(false).map_err(|e| e.to_string())
 }
 
 pub fn uninstall(is_uninstaller: bool) -> Result<()> {
