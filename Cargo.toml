@@ -1,0 +1,21 @@
+[package]
+name = "TinyWiiBackupManagerInstaller"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.92"
+authors = ["Manuel Quarneti <mq1@ik.me>"]
+license = "GPL-3.0-only"
+
+[dependencies]
+iced = { version = "0.14", default-features = false, features = [
+  "thread-pool",
+  "tiny-skia",
+] }
+minreq = { version = "2.14", features = ["https"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
