@@ -31,7 +31,7 @@ enum Message {
     Installed(Result<String, String>),
     AskUninstallConfirmation,
     Uninstall,
-    Uninstalled,
+    Uninstalled(Result<(), String>),
 }
 
 impl State {
@@ -168,8 +168,11 @@ impl State {
                 *self = State::Uninstalling;
                 Task::perform(util::uninstall(), Message::Uninstalled)
             }
-            Message::Uninstalled => {
-                *self = State::Uninstalled;
+            Message::Uninstalled(res) => {
+                match res {
+                    Ok(()) => *self = State::Uninstalled,
+                    Err(e) => *self = State::Errored(e),
+                }
                 Task::none()
             }
         }
