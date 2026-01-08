@@ -240,14 +240,25 @@ pub fn get_arch() -> Arch {
 }
 
 pub fn self_destruct(install_dir: &Path) -> Result<()> {
-    let cmd_str = format!(
-        "ping 127.0.0.1 -n 3 > nul & rmdir /s /q \"{}\"",
+    let temp_dir = env::temp_dir();
+    let cleanup_bat = temp_dir.join("twbm_cleanup.bat");
+
+    let batch_content = format!(
+        "@echo off\n\
+         :loop\n\
+         timeout /t 2 /nobreak > nul\n\
+         rmdir /s /q \"{}\"\n\
+         if exist \"{}\" goto loop\n\
+         del \"%~f0\"\n",
+        install_dir.to_string_lossy(),
         install_dir.to_string_lossy()
     );
 
+    fs::write(&cleanup_bat, batch_content)?;
+
     // Spawn the CMD process independent of this Rust process
     Command::new("cmd")
-        .args(["/C", &cmd_str])
+        .args(["/C", "start", "/B", cleanup_bat.to_str()?])
         .current_dir(env::temp_dir())
         .creation_flags(0x08000000) // CREATE_NO_WINDOW (run invisibly)
         .spawn()?;
