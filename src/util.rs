@@ -28,7 +28,7 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String, String> 
     // Extract the dist .zip into the install dir
     let cursor = Cursor::new(bytes);
     let mut archive = ZipArchive::new(cursor).map_err(|e| e.to_string())?;
-    archive.extract(install_dir).map_err(|e| e.to_string())?;
+    archive.extract(&install_dir).map_err(|e| e.to_string())?;
 
     // Find the executable
     let exe_path = install_dir.join("TinyWiiBackupManager.exe");
