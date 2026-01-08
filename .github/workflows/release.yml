@@ -27,6 +27,7 @@ jobs:
           toolchain: 1.92
           components: rust-src
           rustflags: '-C target-feature=+crt-static'
+          cache: false
 
       - name: Build binary
         shell: pwsh
