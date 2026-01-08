@@ -22,7 +22,9 @@ enum State {
 #[derive(Clone, Debug)]
 enum Message {
     GotLatestVersion(Result<String, String>),
-    Install(String, Os, Arch),
+    Download(String, Os, Arch),
+    Downloaded(Result<(String, Vec<u8>), String>),
+    Installed(Result<String, String>),
 }
 
 impl State {
@@ -43,14 +45,14 @@ impl State {
                 column![
                     text(format!("Latest version: v{}", version)),
                     text(format!("Detected OS: {}", os.as_display_str())),
-                    text(format!("Detected Arch: {}", arch.as_display_str())),
+                    text(format!("Detected arch: {}", arch.as_display_str())),
                     space(),
                     space(),
                     space(),
                     space(),
-                    button("Install")
+                    button("Download and install")
                         .style(style::rounded_button)
-                        .on_press(Message::Install(version.clone(), os, arch))
+                        .on_press(Message::Download(version.clone(), os, arch))
                 ]
                 .spacing(5)
                 .align_x(Alignment::Center)
@@ -61,7 +63,7 @@ impl State {
             State::Installed(version) => {
                 text(format!("TinyWiiBackupManager v{} installed", version)).into()
             }
-            State::Errored(msg) => text(msg).into(),
+            State::Errored(msg) => text(format!("Error: {}", msg)).into(),
         };
 
         container(content).center(Length::Fill).into()
@@ -77,10 +79,30 @@ impl State {
 
                 Task::none()
             }
-            Message::Install(version, os, arch) => {
-                // TODO
-                Task::none()
+            Message::Download(version, os, arch) => {
+                *self = State::Downloading(version.clone());
+                Task::perform(util::download(version, os, arch), Message::Downloaded)
             }
+            Message::Downloaded(res) => match res {
+                Ok((version, bytes)) => {
+                    *self = State::Installing(version.clone());
+                    Task::perform(util::install(version, bytes), Message::Installed)
+                }
+                Err(e) => {
+                    *self = State::Errored(e);
+                    Task::none()
+                }
+            },
+            Message::Installed(res) => match res {
+                Ok(version) => {
+                    *self = State::Installed(version);
+                    Task::none()
+                }
+                Err(e) => {
+                    *self = State::Errored(e);
+                    Task::none()
+                }
+            },
         }
     }
 }

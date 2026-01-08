@@ -11,7 +11,11 @@ iced = { version = "0.14", default-features = false, features = [
   "thread-pool",
   "tiny-skia",
 ] }
-minreq = { version = "2.14", features = ["https"] }
+minreq = { version = "2", features = ["https"] }
+zip = { version = "7", default-features = false, features = [
+  "deflate-flate2-zlib-rs",
+] }
+mslnk = "0.1"
 
 [profile.release]
 opt-level = "z"

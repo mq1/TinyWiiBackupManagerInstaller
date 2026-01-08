@@ -1,16 +1,88 @@
 // SPDX-FileCopyrightText: 2026 Manuel Quarneti <mq1@ik.me>
 // SPDX-License-Identifier: GPL-3.0-only
 
-use std::{env, process::Command};
+use std::{
+    env,
+    fs::{self, File},
+    io::Cursor,
+    path::Path,
+    process::Command,
+};
 
-pub fn get_download_url(version: &str, os: Os, arch: Arch) -> String {
-    format!(
+use zip::ZipArchive;
+
+pub async fn install(version: String, bytes: Vec<u8>) -> Result<String, String> {
+    let appdata = env::var("APPDATA").map_err(|e| e.to_string())?;
+    let localappdata = env::var("LOCALAPPDATA").map_err(|e| e.to_string())?;
+    let userprofile = env::var("USERPROFILE").map_err(|e| e.to_string())?;
+    let install_dir = Path::new(&localappdata).join("TinyWiiBackupManager");
+
+    // Remove existing install
+    if install_dir.exists() {
+        fs::remove_dir_all(&install_dir).map_err(|e| e.to_string())?;
+        fs::create_dir(&install_dir).map_err(|e| e.to_string())?;
+    } else {
+        fs::create_dir_all(&install_dir).map_err(|e| e.to_string())?;
+    }
+
+    // Extract the dist .zip into the install dir
+    let cursor = Cursor::new(bytes);
+    let mut archive = ZipArchive::new(cursor).map_err(|e| e.to_string())?;
+    archive.extract(install_dir).map_err(|e| e.to_string())?;
+
+    // Find the executable
+    let exe_path = install_dir.join("TinyWiiBackupManager.exe");
+    if !exe_path.exists() {
+        return Err("Executable not found in extracted archive".to_string());
+    }
+
+    // Create shortcut on the desktop
+    let shortcut_path = Path::new(&userprofile)
+        .join("Desktop")
+        .join("TinyWiiBackupManager.lnk");
+
+    let mut shortcut = mslnk::ShellLink::new(&exe_path).map_err(|e| e.to_string())?;
+    shortcut.set_working_dir(Some(install_dir.to_string_lossy().to_string()));
+    shortcut
+        .create_lnk(&shortcut_path)
+        .map_err(|e| e.to_string())?;
+
+    // Create Start Menu shortcut
+    let start_menu_dir = Path::new(&appdata)
+        .join("Microsoft")
+        .join("Windows")
+        .join("Start Menu")
+        .join("Programs")
+        .join("TinyWiiBackupManager");
+
+    fs::create_dir_all(&start_menu_dir).map_err(|e| e.to_string())?;
+
+    let start_menu_shortcut = start_menu_dir.join("TinyWiiBackupManager.lnk");
+
+    let mut shortcut = mslnk::ShellLink::new(&exe_path).map_err(|e| e.to_string())?;
+    shortcut.set_working_dir(Some(install_dir.to_string_lossy().to_string()));
+    shortcut
+        .create_lnk(&start_menu_shortcut)
+        .map_err(|e| e.to_string())?;
+
+    Ok(version)
+}
+
+pub async fn download(version: String, os: Os, arch: Arch) -> Result<(String, Vec<u8>), String> {
+    let url = format!(
         "https://github.com/mq1/TinyWiiBackupManager/releases/download/v{}/TinyWiiBackupManager-v{}-{}-{}.zip",
-        version,
-        version,
+        &version,
+        &version,
         os.as_str(),
         arch.as_str()
-    )
+    );
+
+    let bytes = minreq::get(&url)
+        .send()
+        .map_err(|e| e.to_string())?
+        .into_bytes();
+
+    Ok((version, bytes))
 }
 
 pub async fn get_latest_version() -> Result<String, String> {
