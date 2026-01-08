@@ -43,7 +43,10 @@ enum Message {
 impl State {
     fn new() -> (Self, Task<Message>) {
         let initial_state = State::FetchingLatestVersion;
-        let task = Task::perform(util::get_latest_version(), Message::GotLatestVersion);
+        let task = Task::perform(
+            util::get_latest_version().map_err(|e| e.to_string()),
+            Message::GotLatestVersion,
+        );
 
         (initial_state, task)
     }
@@ -151,7 +154,7 @@ impl State {
             Message::Download(version, os, arch) => {
                 *self = State::Downloading(version.clone());
                 Task::perform(
-                    async move { util::download(version, os, arch).map_err(|e| e.to_string()) },
+                    util::download(version, os, arch).map_err(|e| e.to_string()),
                     Message::Downloaded,
                 )
             }
@@ -159,7 +162,7 @@ impl State {
                 Ok((version, bytes)) => {
                     *self = State::Installing(version.clone());
                     Task::perform(
-                        async move { util::install(version, bytes).map_err(|e| e.to_string()) },
+                        util::install(version, bytes).map_err(|e| e.to_string()),
                         Message::Installed,
                     )
                 }
@@ -185,7 +188,7 @@ impl State {
             Message::Uninstall => {
                 *self = State::Uninstalling;
                 Task::perform(
-                    async { util::uninstall(false).map_err(|e| e.to_string()) },
+                    util::uninstall_fut().map_err(|e| e.to_string()),
                     Message::Uninstalled,
                 )
             }

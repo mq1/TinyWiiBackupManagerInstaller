@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Manuel Quarneti <mq1@ik.me>
 // SPDX-License-Identifier: GPL-3.0-only
 
-use anyhow::Result;
+use anyhow::{Result, bail};
 use std::os::windows::process::CommandExt;
 use std::{env, fs, io::Cursor, path::Path, process::Command};
 use zip::ZipArchive;
@@ -32,11 +32,11 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
     // Find the executable
     let exe_path = install_dir.join("TinyWiiBackupManager.exe");
     if !exe_path.exists() {
-        return Err("Executable not found in extracted archive".to_string());
+        bail!("Could not find the TinyWiiBackupManager.exe executable");
     }
 
     // Copy the uninstaller
-    if let (installer_path) = std::env::current_exe() {
+    if let Ok(installer_path) = std::env::current_exe() {
         fs::copy(installer_path, install_dir.join("uninstall.exe"))?;
     }
 
@@ -87,6 +87,10 @@ pub fn is_installed() -> bool {
     Path::new(&localappdata)
         .join("TinyWiiBackupManager")
         .exists()
+}
+
+pub async fn uninstall_fut() -> Result<()> {
+    uninstall(false)
 }
 
 pub fn uninstall(is_uninstaller: bool) -> Result<()> {
@@ -245,8 +249,7 @@ pub fn self_destruct(install_dir: &Path) -> Result<()> {
     Command::new("cmd")
         .args(["/C", &cmd_str])
         .creation_flags(0x08000000) // CREATE_NO_WINDOW (run invisibly)
-        .spawn()
-        .map_err(|e| e.to_string())?;
+        .spawn()?;
 
     Ok(())
 }
