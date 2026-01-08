@@ -258,7 +258,7 @@ pub fn self_destruct(install_dir: &Path) -> Result<()> {
 
     // Spawn the CMD process independent of this Rust process
     Command::new("cmd")
-        .args(["/C", "start", "/B", cleanup_bat.to_str()?])
+        .args(["/C", "start", "/B", &cleanup_bat.to_string_lossy()])
         .current_dir(env::temp_dir())
         .creation_flags(0x08000000) // CREATE_NO_WINDOW (run invisibly)
         .spawn()?;
