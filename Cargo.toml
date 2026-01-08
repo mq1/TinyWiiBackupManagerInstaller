@@ -1,6 +1,6 @@
 [package]
 name = "TinyWiiBackupManagerInstaller"
-version = "0.1.0-alpha"
+version = "0.1.0-alpha.2"
 edition = "2024"
 rust-version = "1.92"
 authors = ["Manuel Quarneti <mq1@ik.me>"]
