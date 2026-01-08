@@ -6,6 +6,10 @@ use std::{env, fs, io::Cursor, path::Path, process::Command};
 use zip::ZipArchive;
 
 pub async fn install(version: String, bytes: Vec<u8>) -> Result<String, String> {
+    // Open the archive
+    let cursor = Cursor::new(bytes);
+    let mut archive = ZipArchive::new(cursor).map_err(|e| e.to_string())?;
+
     let appdata = env::var("APPDATA").map_err(|e| e.to_string())?;
     let localappdata = env::var("LOCALAPPDATA").map_err(|e| e.to_string())?;
     let userprofile = env::var("USERPROFILE").map_err(|e| e.to_string())?;
@@ -20,8 +24,6 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String, String> 
     }
 
     // Extract the dist .zip into the install dir
-    let cursor = Cursor::new(bytes);
-    let mut archive = ZipArchive::new(cursor).map_err(|e| e.to_string())?;
     archive.extract(&install_dir).map_err(|e| e.to_string())?;
 
     // Find the executable
