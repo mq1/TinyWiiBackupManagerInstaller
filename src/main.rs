@@ -99,9 +99,13 @@ impl State {
                     space(),
                     space(),
                     space(),
-                    button("Download and install")
-                        .style(style::rounded_button)
-                        .on_press(Message::Download(version.clone(), os, arch)),
+                    button(if is_installed {
+                        "Update/Reinstall"
+                    } else {
+                        "Download and Install"
+                    })
+                    .style(style::rounded_button)
+                    .on_press(Message::Download(version.clone(), os, arch)),
                     space::vertical(),
                     uninstall_button
                 ]
