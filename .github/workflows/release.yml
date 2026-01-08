@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   build:
-    name: Build for windows and create gh release
+    name: Build for windows
     runs-on: windows-2025
     steps:
       - name: Checkout
