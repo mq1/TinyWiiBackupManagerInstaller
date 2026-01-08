@@ -131,7 +131,7 @@ impl State {
             Message::GotLatestVersion(res) => {
                 match res {
                     Ok(version) => *self = State::GotLatestVersion(version),
-                    Err(e) => *self = State::Errored(e),
+                    Err(e) => *self = State::CouldNotFetchLatestVersion(e),
                 }
 
                 Task::none()
