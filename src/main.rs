@@ -85,6 +85,7 @@ impl State {
                             .on_press(Message::AskUninstallConfirmation)
                     ]
                     .spacing(5)
+                    .align_y(Alignment::Center)
                     .into(),
                     false => row![].into(),
                 };
@@ -121,6 +122,7 @@ impl State {
                     .on_press(Message::Uninstall),
             ]
             .spacing(10)
+            .align_x(Alignment::Center)
             .into(),
             State::Uninstalling => text("Uninstalling TinyWiiBackupManager...").into(),
             State::Uninstalled => text("TinyWiiBackupManager successfully uninstalled").into(),
