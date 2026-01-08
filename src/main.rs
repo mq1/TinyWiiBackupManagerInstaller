@@ -7,16 +7,20 @@ mod util;
 use crate::util::{Arch, Os};
 use iced::{
     Alignment, Element, Length, Size, Task,
-    widget::{button, column, container, space, text},
+    widget::{button, column, container, row, space, text},
 };
 
 enum State {
     FetchingLatestVersion,
+    CouldNotFetchLatestVersion(String),
     GotLatestVersion(String),
     Downloading(String),
     Installing(String),
     Installed(String),
     Errored(String),
+    AskingUninstallConfirmation,
+    Uninstalling,
+    Uninstalled,
 }
 
 #[derive(Clone, Debug)]
@@ -25,6 +29,9 @@ enum Message {
     Download(String, Os, Arch),
     Downloaded(Result<(String, Vec<u8>), String>),
     Installed(Result<String, String>),
+    AskUninstallConfirmation,
+    Uninstall,
+    Uninstalled,
 }
 
 impl State {
@@ -38,11 +45,49 @@ impl State {
     fn view(&self) -> Element<'_, Message> {
         let content: Element<'_, Message> = match self {
             State::FetchingLatestVersion => text("Fetching latest version...").into(),
+            State::CouldNotFetchLatestVersion(error) => {
+                let is_installed = util::is_installed();
+
+                let uninstall_button: Element<'_, Message> = match is_installed {
+                    true => row![
+                        text("TinyWiiBackupManager installation detected"),
+                        button("Uninstall")
+                            .style(style::rounded_danger_button)
+                            .on_press(Message::AskUninstallConfirmation)
+                    ]
+                    .spacing(5)
+                    .into(),
+                    false => row![].into(),
+                };
+
+                column![
+                    space::vertical(),
+                    text(format!("Could not fetch latest version: {}", error)),
+                    space::vertical(),
+                    uninstall_button
+                ]
+                .align_x(Alignment::Center)
+                .into()
+            }
             State::GotLatestVersion(version) => {
                 let os = util::get_os();
                 let arch = util::get_arch();
+                let is_installed = util::is_installed();
+
+                let uninstall_button: Element<'_, Message> = match is_installed {
+                    true => row![
+                        text("TinyWiiBackupManager installation detected"),
+                        button("Uninstall")
+                            .style(style::rounded_danger_button)
+                            .on_press(Message::AskUninstallConfirmation)
+                    ]
+                    .spacing(5)
+                    .into(),
+                    false => row![].into(),
+                };
 
                 column![
+                    space::vertical(),
                     text(format!("Latest version: v{}", version)),
                     text(format!("Detected OS: {}", os.as_display_str())),
                     text(format!("Detected arch: {}", arch.as_display_str())),
@@ -52,7 +97,9 @@ impl State {
                     space(),
                     button("Download and install")
                         .style(style::rounded_button)
-                        .on_press(Message::Download(version.clone(), os, arch))
+                        .on_press(Message::Download(version.clone(), os, arch)),
+                    space::vertical(),
+                    uninstall_button
                 ]
                 .spacing(5)
                 .align_x(Alignment::Center)
@@ -64,6 +111,16 @@ impl State {
                 text(format!("TinyWiiBackupManager v{} installed", version)).into()
             }
             State::Errored(msg) => text(format!("Error: {}", msg)).into(),
+            State::AskingUninstallConfirmation => column![
+                text("Are you sure you want to uninstall TinyWiiBackupManager?"),
+                button("Proceed")
+                    .style(style::rounded_danger_button)
+                    .on_press(Message::Uninstall),
+            ]
+            .spacing(10)
+            .into(),
+            State::Uninstalling => text("Uninstalling TinyWiiBackupManager...").into(),
+            State::Uninstalled => text("TinyWiiBackupManager successfully uninstalled").into(),
         };
 
         container(content).center(Length::Fill).into()
@@ -103,6 +160,18 @@ impl State {
                     Task::none()
                 }
             },
+            Message::AskUninstallConfirmation => {
+                *self = State::AskingUninstallConfirmation;
+                Task::none()
+            }
+            Message::Uninstall => {
+                *self = State::Uninstalling;
+                Task::perform(util::uninstall(), Message::Uninstalled)
+            }
+            Message::Uninstalled => {
+                *self = State::Uninstalled;
+                Task::none()
+            }
         }
     }
 }

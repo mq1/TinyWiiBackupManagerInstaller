@@ -1,14 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Manuel Quarneti <mq1@ik.me>
 // SPDX-License-Identifier: GPL-3.0-only
 
-use std::{
-    env,
-    fs::{self, File},
-    io::Cursor,
-    path::Path,
-    process::Command,
-};
-
+use std::{env, fs, io::Cursor, path::Path, process::Command};
 use zip::ZipArchive;
 
 pub async fn install(version: String, bytes: Vec<u8>) -> Result<String, String> {
@@ -74,6 +67,47 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String, String> 
         .map_err(|e| e.to_string())?;
 
     Ok(version)
+}
+
+pub fn is_installed() -> bool {
+    let localappdata = match env::var("LOCALAPPDATA") {
+        Ok(localappdata) => localappdata,
+        Err(_) => return false,
+    };
+
+    Path::new(&localappdata)
+        .join("TinyWiiBackupManager")
+        .exists()
+}
+
+pub async fn uninstall() -> Result<(), String> {
+    let appdata = env::var("APPDATA").map_err(|e| e.to_string())?;
+    let localappdata = env::var("LOCALAPPDATA").map_err(|e| e.to_string())?;
+    let userprofile = env::var("USERPROFILE").map_err(|e| e.to_string())?;
+
+    let install_dir = Path::new(&localappdata).join("TinyWiiBackupManager");
+    if install_dir.exists() {
+        fs::remove_dir_all(&install_dir).map_err(|e| e.to_string())?;
+    }
+
+    let shortcut_path = Path::new(&userprofile)
+        .join("Desktop")
+        .join("TinyWiiBackupManager.lnk");
+    if shortcut_path.exists() {
+        fs::remove_file(&shortcut_path).map_err(|e| e.to_string())?;
+    }
+
+    let start_menu_dir = Path::new(&appdata)
+        .join("Microsoft")
+        .join("Windows")
+        .join("Start Menu")
+        .join("Programs")
+        .join("TinyWiiBackupManager");
+    if start_menu_dir.exists() {
+        fs::remove_dir_all(&start_menu_dir).map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
 }
 
 pub async fn download(version: String, os: Os, arch: Arch) -> Result<(String, Vec<u8>), String> {
