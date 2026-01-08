@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 jobs:
-  build-and-release:
+  build:
     name: Build for windows and create gh release
     runs-on: windows-2025
     steps:
@@ -35,11 +35,27 @@ jobs:
         env:
           RUSTC_BOOTSTRAP: 1
 
+      - name: Upload distributable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: target/i686-win7-windows-msvc/release/TinyWiiBackupManagerInstaller.exe
+
+  release:
+    name: Create GitHub Release
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-slim
+    needs: [build]
+    steps:
+      - name: Download distributables
+        uses: actions/download-artifact@v7
+        with:
+          name: dist
+
       - name: Create GitHub Release
-        if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
-          files: target/i686-win7-windows-msvc/release/TinyWiiBackupManager.exe
+          files: dist/TinyWiiBackupManagerInstaller.exe
           prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
