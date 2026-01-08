@@ -120,7 +120,7 @@ pub fn uninstall(is_uninstaller: bool) -> Result<()> {
         fs::remove_dir_all(&data_dir)?;
     }
 
-    reg::remove_reg_keys();
+    reg::remove_reg_keys()?;
 
     let install_dir = Path::new(&localappdata).join("TinyWiiBackupManager");
     if is_uninstaller {
