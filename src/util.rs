@@ -108,6 +108,11 @@ pub async fn uninstall() -> Result<(), String> {
         fs::remove_dir_all(&start_menu_dir).map_err(|e| e.to_string())?;
     }
 
+    let data_dir = Path::new(&appdata).join("mq1").join("TinyWiiBackupManager");
+    if data_dir.exists() {
+        fs::remove_dir_all(&data_dir).map_err(|e| e.to_string())?;
+    }
+
     Ok(())
 }
 
