@@ -70,7 +70,7 @@ impl State {
                         text("TinyWiiBackupManager installation detected"),
                         button("Uninstall")
                             .style(style::rounded_danger_button)
-                            .on_press(Message::AskUninstallConfirmation(false))
+                            .on_press(Message::AskUninstallConfirmation)
                     ]
                     .spacing(5)
                     .into(),

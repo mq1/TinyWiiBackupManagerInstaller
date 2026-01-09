@@ -259,6 +259,4 @@ pub fn self_destruct(install_dir: &Path) -> Result<()> {
         .spawn()?;
 
     std::process::exit(0);
-
-    Ok(())
 }
