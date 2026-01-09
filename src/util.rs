@@ -266,7 +266,7 @@ pub fn launch_twbm() -> Result<()> {
     let exe_path = install_dir.join("TinyWiiBackupManager.exe");
 
     Command::new("cmd")
-        .args(["/C", "start", "/B", "", &exe_path.to_string_lossy()])
+        .args(["/C", "start", "/B", &exe_path.to_string_lossy()])
         .current_dir(install_dir)
         .creation_flags(0x08000000) // CREATE_NO_WINDOW (run invisibly)
         .spawn()?;
