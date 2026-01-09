@@ -258,5 +258,5 @@ pub fn self_destruct(install_dir: &Path) -> Result<()> {
         .creation_flags(0x08000000) // CREATE_NO_WINDOW (run invisibly)
         .spawn()?;
 
-    std::process::exit(0);
+    Ok(())
 }

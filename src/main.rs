@@ -194,7 +194,12 @@ impl State {
             }
             Message::Uninstall(is_uninstaller) => {
                 if is_uninstaller {
-                    util::uninstall(is_uninstaller);
+                    match util::uninstall(is_uninstaller) {
+                        Ok(()) => {
+                            std::process::exit(0);
+                        }
+                        Err(e) => *self = State::Errored(e.to_string()),
+                    }
                     Task::none()
                 } else {
                     *self = State::Uninstalling;
