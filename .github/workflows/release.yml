@@ -34,6 +34,7 @@ jobs:
         run: cargo build -Z build-std=std,panic_abort --release --locked --target i686-win7-windows-msvc
         env:
           RUSTC_BOOTSTRAP: 1
+          CARGO_TARGET_I686_WIN7_WINDOWS_MSVC_LINKER: rust-lld.exe
 
       - name: Upload distributable artifact
         uses: actions/upload-artifact@v4
