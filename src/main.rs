@@ -9,7 +9,6 @@ mod style;
 mod util;
 
 use crate::util::{Arch, Os};
-use anyhow::Result;
 use iced::{
     Alignment, Element, Length, Size, Task,
     futures::TryFutureExt,
@@ -25,7 +24,7 @@ enum State {
     Installing(String),
     Installed(String),
     Errored(String),
-    AskingUninstallConfirmation,
+    AskingUninstallConfirmation(bool),
     Uninstalling,
     Uninstalled,
 }
@@ -37,13 +36,21 @@ enum Message {
     Downloaded(Result<(String, Vec<u8>), String>),
     Installed(Result<String, String>),
     AskUninstallConfirmation,
-    Uninstall,
+    Uninstall(bool),
     Uninstalled(Result<(), String>),
 }
 
 impl State {
     fn new() -> (Self, Task<Message>) {
-        let initial_state = State::FetchingLatestVersion;
+        let initial_state = if let Ok(path) = std::env::current_exe()
+            && let Some(name) = path.file_name().and_then(OsStr::to_str)
+            && name == "uninstall.exe"
+        {
+            State::AskingUninstallConfirmation(true)
+        } else {
+            State::FetchingLatestVersion
+        };
+
         let task = Task::perform(
             util::get_latest_version().map_err(|e| e.to_string()),
             Message::GotLatestVersion,
@@ -63,7 +70,7 @@ impl State {
                         text("TinyWiiBackupManager installation detected"),
                         button("Uninstall")
                             .style(style::rounded_danger_button)
-                            .on_press(Message::AskUninstallConfirmation)
+                            .on_press(Message::AskUninstallConfirmation(false))
                     ]
                     .spacing(5)
                     .into(),
@@ -126,11 +133,11 @@ impl State {
                 text(format!("TinyWiiBackupManager v{} installed", version)).into()
             }
             State::Errored(msg) => text(format!("Error: {}", msg)).into(),
-            State::AskingUninstallConfirmation => column![
+            State::AskingUninstallConfirmation(is_uninstaller) => column![
                 text("Are you sure you want to uninstall TinyWiiBackupManager?"),
                 button("Proceed")
                     .style(style::rounded_danger_button)
-                    .on_press(Message::Uninstall),
+                    .on_press(Message::Uninstall(*is_uninstaller)),
             ]
             .spacing(10)
             .align_x(Alignment::Center)
@@ -183,12 +190,15 @@ impl State {
                 }
             },
             Message::AskUninstallConfirmation => {
-                *self = State::AskingUninstallConfirmation;
+                *self = State::AskingUninstallConfirmation(false);
                 Task::none()
             }
-            Message::Uninstall => {
+            Message::Uninstall(is_uninstaller) => {
                 *self = State::Uninstalling;
-                Task::perform(util::uninstall_future(), Message::Uninstalled)
+                Task::perform(
+                    util::uninstall(is_uninstaller).map_err(|e| e.to_string()),
+                    Message::Uninstalled,
+                )
             }
             Message::Uninstalled(res) => {
                 match res {
@@ -201,19 +211,10 @@ impl State {
     }
 }
 
-fn main() -> Result<()> {
-    if let Ok(path) = std::env::current_exe()
-        && let Some(name) = path.file_name().and_then(OsStr::to_str)
-        && name == "uninstall.exe"
-    {
-        return util::uninstall(true);
-    }
-
+fn main() -> iced::Result {
     iced::application(State::new, State::update, State::view)
         .window_size(Size::new(500.0, 300.0))
         .resizable(false)
         .title("Install TinyWiiBackupManager")
-        .run()?;
-
-    Ok(())
+        .run()
 }

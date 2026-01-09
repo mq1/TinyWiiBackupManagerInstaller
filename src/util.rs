@@ -1,12 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Manuel Quarneti <mq1@ik.me>
 // SPDX-License-Identifier: GPL-3.0-only
 
+use crate::reg;
 use anyhow::{Result, bail};
 use std::os::windows::process::CommandExt;
 use std::{env, fs, io::Cursor, path::Path, process::Command};
 use zip::ZipArchive;
-
-use crate::reg;
 
 pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
     // Open the archive
@@ -89,11 +88,7 @@ pub fn is_installed() -> bool {
         .exists()
 }
 
-pub async fn uninstall_future() -> Result<(), String> {
-    uninstall(false).map_err(|e| e.to_string())
-}
-
-pub fn uninstall(is_uninstaller: bool) -> Result<()> {
+pub async fn uninstall(is_uninstaller: bool) -> Result<()> {
     let appdata = env::var("APPDATA")?;
     let localappdata = env::var("LOCALAPPDATA")?;
     let userprofile = env::var("USERPROFILE")?;
@@ -262,6 +257,8 @@ pub fn self_destruct(install_dir: &Path) -> Result<()> {
         .current_dir(env::temp_dir())
         .creation_flags(0x08000000) // CREATE_NO_WINDOW (run invisibly)
         .spawn()?;
+
+    std::process::exit(0);
 
     Ok(())
 }
