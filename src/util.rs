@@ -239,12 +239,12 @@ pub fn self_destruct(install_dir: &Path) -> Result<()> {
     let cleanup_bat = temp_dir.join("twbm_cleanup.bat");
 
     let batch_content = format!(
-        "@echo off\n\
-         :loop\n\
-         timeout /t 2 /nobreak > nul\n\
-         rmdir /s /q \"{}\"\n\
-         if exist \"{}\" goto loop\n\
-         del \"%~f0\"\n",
+        "@echo off\r\n\
+         :LOOP\r\n\
+         ping 127.0.0.1 -n 2 > nul\r\n\
+         rmdir /s /q \"{}\"\r\n\
+         if exist \"{}\" goto LOOP\r\n\
+         del \"%~f0\"",
         install_dir.to_string_lossy(),
         install_dir.to_string_lossy()
     );
@@ -255,6 +255,19 @@ pub fn self_destruct(install_dir: &Path) -> Result<()> {
     Command::new("cmd")
         .args(["/C", "start", "/B", &cleanup_bat.to_string_lossy()])
         .current_dir(env::temp_dir())
+        .creation_flags(0x08000000) // CREATE_NO_WINDOW (run invisibly)
+        .spawn()?;
+
+    Ok(())
+}
+
+pub fn launch_twbm() -> Result<()> {
+    let install_dir = Path::new(&env::var("LOCALAPPDATA")?).join("TinyWiiBackupManager");
+    let exe_path = install_dir.join("TinyWiiBackupManager.exe");
+
+    Command::new("cmd")
+        .args(["/C", "start", "/B", "", &exe_path.to_string_lossy()])
+        .current_dir(&install_dir.to_string_lossy())
         .creation_flags(0x08000000) // CREATE_NO_WINDOW (run invisibly)
         .spawn()?;
 

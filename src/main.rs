@@ -38,6 +38,7 @@ enum Message {
     AskUninstallConfirmation,
     Uninstall(bool),
     Uninstalled(Result<(), String>),
+    LaunchTwbm,
 }
 
 impl State {
@@ -128,9 +129,15 @@ impl State {
             }
             State::Downloading(version) => text(format!("Downloading v{}", version)).into(),
             State::Installing(version) => text(format!("Installing v{}", version)).into(),
-            State::Installed(version) => {
-                text(format!("TinyWiiBackupManager v{} installed", version)).into()
-            }
+            State::Installed(version) => column![
+                text(format!("TinyWiiBackupManager v{} installed", version)),
+                button("> Launch TinyWiiBackupManager")
+                    .style(style::rounded_button)
+                    .on_press(Message::LaunchTwbm)
+            ]
+            .spacing(10)
+            .align_x(Alignment::Center)
+            .into(),
             State::Errored(msg) => text(format!("Error: {}", msg)).into(),
             State::AskingUninstallConfirmation(is_uninstaller) => column![
                 text("Are you sure you want to uninstall TinyWiiBackupManager?"),
@@ -213,6 +220,15 @@ impl State {
                 match res {
                     Ok(()) => *self = State::Uninstalled,
                     Err(e) => *self = State::Errored(e),
+                }
+                Task::none()
+            }
+            Message::LaunchTwbm => {
+                match util::launch_twbm() {
+                    Ok(()) => {
+                        std::process::exit(0);
+                    }
+                    Err(e) => *self = State::Errored(e.to_string()),
                 }
                 Task::none()
             }
