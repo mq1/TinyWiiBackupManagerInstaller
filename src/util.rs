@@ -88,7 +88,7 @@ pub fn is_installed() -> bool {
         .exists()
 }
 
-pub async fn uninstall(is_uninstaller: bool) -> Result<()> {
+pub fn uninstall(is_uninstaller: bool) -> Result<()> {
     let appdata = env::var("APPDATA")?;
     let localappdata = env::var("LOCALAPPDATA")?;
     let userprofile = env::var("USERPROFILE")?;

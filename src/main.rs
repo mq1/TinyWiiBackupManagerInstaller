@@ -193,11 +193,16 @@ impl State {
                 Task::none()
             }
             Message::Uninstall(is_uninstaller) => {
-                *self = State::Uninstalling;
-                Task::perform(
-                    util::uninstall(is_uninstaller).map_err(|e| e.to_string()),
-                    Message::Uninstalled,
-                )
+                if is_uninstaller {
+                    util::uninstall(is_uninstaller);
+                    Task::none()
+                } else {
+                    *self = State::Uninstalling;
+                    Task::perform(
+                        async move { util::uninstall(is_uninstaller) }.map_err(|e| e.to_string()),
+                        Message::Uninstalled,
+                    )
+                }
             }
             Message::Uninstalled(res) => {
                 match res {
