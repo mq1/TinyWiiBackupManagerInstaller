@@ -42,21 +42,20 @@ enum Message {
 
 impl State {
     fn new() -> (Self, Task<Message>) {
-        let initial_state = if let Ok(path) = std::env::current_exe()
+        if let Ok(path) = std::env::current_exe()
             && let Some(name) = path.file_name().and_then(OsStr::to_str)
             && name == "uninstall.exe"
         {
-            State::AskingUninstallConfirmation(true)
+            (State::AskingUninstallConfirmation(true), Task::none())
         } else {
-            State::FetchingLatestVersion
-        };
-
-        let task = Task::perform(
-            util::get_latest_version().map_err(|e| e.to_string()),
-            Message::GotLatestVersion,
-        );
-
-        (initial_state, task)
+            (
+                State::FetchingLatestVersion,
+                Task::perform(
+                    util::get_latest_version().map_err(|e| e.to_string()),
+                    Message::GotLatestVersion,
+                ),
+            )
+        }
     }
 
     fn view(&self) -> Element<'_, Message> {
