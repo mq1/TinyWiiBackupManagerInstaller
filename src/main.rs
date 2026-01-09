@@ -131,7 +131,7 @@ impl State {
             State::Installing(version) => text(format!("Installing v{}", version)).into(),
             State::Installed(version) => column![
                 text(format!("TinyWiiBackupManager v{} installed", version)),
-                button("> Launch TinyWiiBackupManager")
+                button("→ Launch TinyWiiBackupManager")
                     .style(style::rounded_button)
                     .on_press(Message::LaunchTwbm)
             ]
