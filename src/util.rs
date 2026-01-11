@@ -1,12 +1,16 @@
 // SPDX-FileCopyrightText: 2026 Manuel Quarneti <mq1@ik.me>
 // SPDX-License-Identifier: GPL-3.0-only
 
-use crate::reg;
-use anyhow::{Result, bail};
+use anyhow::Result;
+use base64::Engine;
+use base64::prelude::BASE64_STANDARD;
+use std::fs::File;
+use std::io;
 use std::os::windows::process::CommandExt;
 use std::{env, fs, io::Cursor, path::Path, process::Command};
 use zip::ZipArchive;
 
+const POSTINSTALL_PS1: &[u8] = include_bytes!("../postinstall.ps1");
 const UNINSTALL_PS1: &[u8] = include_bytes!("../uninstall.ps1");
 
 pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
@@ -14,9 +18,7 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
     let cursor = Cursor::new(bytes);
     let mut archive = ZipArchive::new(cursor)?;
 
-    let appdata = env::var("APPDATA")?;
     let localappdata = env::var("LOCALAPPDATA")?;
-    let userprofile = env::var("USERPROFILE")?;
     let install_dir = Path::new(&localappdata).join("TinyWiiBackupManager");
 
     // Remove existing install
@@ -28,51 +30,18 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
     }
 
     // Extract the dist .zip into the install dir
-    archive.extract(&install_dir)?;
-
-    // Find the executable
-    let exe_path = install_dir.join("TinyWiiBackupManager.exe");
-    if !exe_path.exists() {
-        bail!("Could not find the TinyWiiBackupManager.exe executable");
-    }
+    let mut archived_exe = archive.by_name("TinyWiiBackupManager.exe")?;
+    let mut file = File::create(install_dir.join("TinyWiiBackupManager.exe"))?;
+    io::copy(&mut archived_exe, &mut file)?;
 
     // Write the uninstaller script
     fs::write(install_dir.join("uninstall.ps1"), UNINSTALL_PS1)?;
 
-    reg::install_reg_keys(&version, &install_dir)?;
-
-    // Create shortcut on the desktop
-    let shortcut_path = Path::new(&userprofile)
-        .join("Desktop")
-        .join("TinyWiiBackupManager.lnk");
-
-    if shortcut_path.exists() {
-        fs::remove_file(&shortcut_path)?;
-    }
-
-    let mut shortcut = mslnk::ShellLink::new(&exe_path)?;
-    shortcut.set_working_dir(Some(install_dir.to_string_lossy().to_string()));
-    shortcut.create_lnk(&shortcut_path)?;
-
-    // Create Start Menu shortcut
-    let start_menu_dir = Path::new(&appdata)
-        .join("Microsoft")
-        .join("Windows")
-        .join("Start Menu")
-        .join("Programs")
-        .join("TinyWiiBackupManager");
-
-    let start_menu_shortcut = start_menu_dir.join("TinyWiiBackupManager.lnk");
-
-    if start_menu_shortcut.exists() {
-        fs::remove_file(&start_menu_shortcut)?;
-    } else {
-        fs::create_dir_all(&start_menu_dir)?;
-    }
-
-    let mut shortcut = mslnk::ShellLink::new(&exe_path)?;
-    shortcut.set_working_dir(Some(install_dir.to_string_lossy().to_string()));
-    shortcut.create_lnk(&start_menu_shortcut)?;
+    // Run postinstall script
+    let encoded = BASE64_STANDARD.encode(POSTINSTALL_PS1);
+    let _output = Command::new("powershell")
+        .args(["-NoProfile", "-EncodedCommand", &encoded])
+        .output()?;
 
     Ok(version)
 }

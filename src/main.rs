@@ -4,7 +4,6 @@
 #![warn(clippy::all, rust_2018_idioms)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-mod reg;
 mod style;
 mod util;
 
@@ -12,9 +11,8 @@ use crate::util::{Arch, Os};
 use iced::{
     Alignment, Element, Length, Size, Task,
     futures::TryFutureExt,
-    widget::{button, column, container, row, space, text},
+    widget::{button, column, container, space, text},
 };
-use std::ffi::OsStr;
 
 enum State {
     FetchingLatestVersion,
