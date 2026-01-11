@@ -73,9 +73,10 @@ impl State {
                             .style(style::rounded_button)
                             .on_press(Message::Download(version.clone(), os, arch)),
                         button("Download Portable")
-                            .style(style::rounded_button)
+                            .style(style::rounded_secondary_button)
                             .on_press(Message::DownloadPortable(version.clone(), os, arch)),
                     ]
+                    .spacing(10)
                 ]
                 .spacing(5)
                 .align_x(Alignment::Center)
@@ -94,7 +95,6 @@ impl State {
             .into(),
             State::InstalledPortable(version, path) => column![
                 text(format!("TinyWiiBackupManager v{} installed", version)),
-                text(format!("Path: {}", path.display())),
                 button("→ Launch TinyWiiBackupManager")
                     .style(style::rounded_button)
                     .on_press(Message::LaunchTwbmPortable(path.clone()))

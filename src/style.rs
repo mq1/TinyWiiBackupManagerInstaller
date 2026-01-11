@@ -8,3 +8,11 @@ pub fn rounded_button(theme: &Theme, status: button::Status) -> button::Style {
     style.border.radius = border::radius(30);
     style
 }
+
+pub fn rounded_secondary_button(theme: &Theme, status: button::Status) -> button::Style {
+    let mut style = button::background(theme, status);
+    style.border.width = 1.0;
+    style.border.color = theme.extended_palette().background.strong.color;
+    style.border.radius = border::radius(30);
+    style
+}
