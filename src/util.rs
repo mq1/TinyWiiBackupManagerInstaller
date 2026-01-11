@@ -64,7 +64,7 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
     // Create start menu shortcut
     let start_menu_dir = base_dirs
         .data_dir()
-        .join(r"Microsoft\Windows\Start Menu\Programs\TinyWiiBackupManager");
+        .join("Microsoft\\Windows\\Start Menu\\Programs\\TinyWiiBackupManager");
     if start_menu_dir.exists() {
         fs::remove_dir_all(&start_menu_dir)?;
     }
@@ -93,15 +93,11 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
     Ok(version)
 }
 
-pub fn is_installed() -> bool {
-    let localappdata = match env::var("LOCALAPPDATA") {
-        Ok(localappdata) => localappdata,
-        Err(_) => return false,
-    };
+pub fn is_installed() -> Result<bool> {
+    let base_dirs = BaseDirs::new().ok_or(anyhow!("Failed to get base dirs"))?;
+    let install_dir = base_dirs.data_local_dir().join("TinyWiiBackupManager");
 
-    Path::new(&localappdata)
-        .join("TinyWiiBackupManager")
-        .exists()
+    Ok(install_dir.exists())
 }
 
 pub async fn download(version: String, os: Os, arch: Arch) -> Result<(String, Vec<u8>)> {

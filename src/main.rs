@@ -48,7 +48,7 @@ impl State {
             State::GotLatestVersion(version) => {
                 let os = util::get_os().unwrap_or_default();
                 let arch = util::get_arch();
-                let is_installed = util::is_installed();
+                let is_installed = util::is_installed().unwrap_or(false);
 
                 column![
                     text(format!("Latest version: v{}", version)),
