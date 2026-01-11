@@ -87,6 +87,10 @@ pub fn install_reg_keys(version: &str, install_dir: &Path) -> Result<()> {
     ])?;
 
     // 6. Set Uninstall String
+    let uninstall_cmd = format!(
+        "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File \"{}\"",
+        &install_dir.join("uninstall.ps1").to_string_lossy()
+    );
     reg(&[
         "add",
         REG_KEY,
@@ -95,7 +99,7 @@ pub fn install_reg_keys(version: &str, install_dir: &Path) -> Result<()> {
         "/t",
         "REG_SZ",
         "/d",
-        &install_dir.join("uninstall.exe").to_string_lossy(),
+        &uninstall_cmd,
         "/f",
     ])?;
 
@@ -124,8 +128,4 @@ pub fn install_reg_keys(version: &str, install_dir: &Path) -> Result<()> {
     ])?;
 
     Ok(())
-}
-
-pub fn remove_reg_keys() -> Result<()> {
-    reg(&["delete", REG_KEY, "/f"])
 }

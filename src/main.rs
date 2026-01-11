@@ -18,15 +18,11 @@ use std::ffi::OsStr;
 
 enum State {
     FetchingLatestVersion,
-    CouldNotFetchLatestVersion(String),
     GotLatestVersion(String),
     Downloading(String),
     Installing(String),
     Installed(String),
     Errored(String),
-    AskingUninstallConfirmation(bool),
-    Uninstalling,
-    Uninstalled,
 }
 
 #[derive(Clone, Debug)]
@@ -35,77 +31,28 @@ enum Message {
     Download(String, Os, Arch),
     Downloaded(Result<(String, Vec<u8>), String>),
     Installed(Result<String, String>),
-    AskUninstallConfirmation,
-    Uninstall(bool),
-    Uninstalled(Result<(), String>),
     LaunchTwbm,
 }
 
 impl State {
     fn new() -> (Self, Task<Message>) {
-        if let Ok(path) = std::env::current_exe()
-            && let Some(name) = path.file_name().and_then(OsStr::to_str)
-            && name == "uninstall.exe"
-        {
-            (State::AskingUninstallConfirmation(true), Task::none())
-        } else {
-            (
-                State::FetchingLatestVersion,
-                Task::perform(
-                    util::get_latest_version().map_err(|e| e.to_string()),
-                    Message::GotLatestVersion,
-                ),
-            )
-        }
+        let task = Task::perform(
+            util::get_latest_version().map_err(|e| e.to_string()),
+            Message::GotLatestVersion,
+        );
+
+        (State::FetchingLatestVersion, task)
     }
 
     fn view(&self) -> Element<'_, Message> {
         let content: Element<'_, Message> = match self {
             State::FetchingLatestVersion => text("Fetching latest version...").into(),
-            State::CouldNotFetchLatestVersion(error) => {
-                let is_installed = util::is_installed();
-
-                let uninstall_button: Element<'_, Message> = match is_installed {
-                    true => row![
-                        text("TinyWiiBackupManager installation detected"),
-                        button("Uninstall")
-                            .style(style::rounded_danger_button)
-                            .on_press(Message::AskUninstallConfirmation)
-                    ]
-                    .spacing(5)
-                    .into(),
-                    false => row![].into(),
-                };
-
-                column![
-                    space::vertical(),
-                    text(format!("Could not fetch latest version: {}", error)),
-                    space::vertical(),
-                    uninstall_button
-                ]
-                .align_x(Alignment::Center)
-                .into()
-            }
             State::GotLatestVersion(version) => {
                 let os = util::get_os();
                 let arch = util::get_arch();
                 let is_installed = util::is_installed();
 
-                let uninstall_button: Element<'_, Message> = match is_installed {
-                    true => row![
-                        text("TinyWiiBackupManager installation detected"),
-                        button("Uninstall")
-                            .style(style::rounded_danger_button)
-                            .on_press(Message::AskUninstallConfirmation)
-                    ]
-                    .spacing(5)
-                    .align_y(Alignment::Center)
-                    .into(),
-                    false => row![].into(),
-                };
-
                 column![
-                    space::vertical(),
                     text(format!("Latest version: v{}", version)),
                     text(format!("Detected OS: {}", os.as_display_str())),
                     text(format!("Detected arch: {}", arch.as_display_str())),
@@ -120,8 +67,6 @@ impl State {
                     })
                     .style(style::rounded_button)
                     .on_press(Message::Download(version.clone(), os, arch)),
-                    space::vertical(),
-                    uninstall_button
                 ]
                 .spacing(5)
                 .align_x(Alignment::Center)
@@ -139,17 +84,6 @@ impl State {
             .align_x(Alignment::Center)
             .into(),
             State::Errored(msg) => text(format!("Error: {}", msg)).into(),
-            State::AskingUninstallConfirmation(is_uninstaller) => column![
-                text("Are you sure you want to uninstall TinyWiiBackupManager?"),
-                button("Proceed")
-                    .style(style::rounded_danger_button)
-                    .on_press(Message::Uninstall(*is_uninstaller)),
-            ]
-            .spacing(10)
-            .align_x(Alignment::Center)
-            .into(),
-            State::Uninstalling => text("Uninstalling TinyWiiBackupManager...").into(),
-            State::Uninstalled => text("TinyWiiBackupManager successfully uninstalled").into(),
         };
 
         container(content).center(Length::Fill).padding(10).into()
@@ -160,7 +94,7 @@ impl State {
             Message::GotLatestVersion(res) => {
                 match res {
                     Ok(version) => *self = State::GotLatestVersion(version),
-                    Err(e) => *self = State::CouldNotFetchLatestVersion(e),
+                    Err(e) => *self = State::Errored(e),
                 }
 
                 Task::none()
@@ -195,34 +129,6 @@ impl State {
                     Task::none()
                 }
             },
-            Message::AskUninstallConfirmation => {
-                *self = State::AskingUninstallConfirmation(false);
-                Task::none()
-            }
-            Message::Uninstall(is_uninstaller) => {
-                if is_uninstaller {
-                    match util::uninstall(is_uninstaller) {
-                        Ok(()) => {
-                            std::process::exit(0);
-                        }
-                        Err(e) => *self = State::Errored(e.to_string()),
-                    }
-                    Task::none()
-                } else {
-                    *self = State::Uninstalling;
-                    Task::perform(
-                        async move { util::uninstall(is_uninstaller) }.map_err(|e| e.to_string()),
-                        Message::Uninstalled,
-                    )
-                }
-            }
-            Message::Uninstalled(res) => {
-                match res {
-                    Ok(()) => *self = State::Uninstalled,
-                    Err(e) => *self = State::Errored(e),
-                }
-                Task::none()
-            }
             Message::LaunchTwbm => {
                 match util::launch_twbm() {
                     Ok(()) => {

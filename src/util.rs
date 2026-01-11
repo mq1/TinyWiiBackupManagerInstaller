@@ -7,6 +7,8 @@ use std::os::windows::process::CommandExt;
 use std::{env, fs, io::Cursor, path::Path, process::Command};
 use zip::ZipArchive;
 
+const UNINSTALL_PS1: &[u8] = include_bytes!("../uninstall.ps1");
+
 pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
     // Open the archive
     let cursor = Cursor::new(bytes);
@@ -34,10 +36,8 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
         bail!("Could not find the TinyWiiBackupManager.exe executable");
     }
 
-    // Copy the uninstaller
-    if let Ok(installer_path) = std::env::current_exe() {
-        fs::copy(installer_path, install_dir.join("uninstall.exe"))?;
-    }
+    // Write the uninstaller script
+    fs::write(install_dir.join("uninstall.ps1"), UNINSTALL_PS1)?;
 
     reg::install_reg_keys(&version, &install_dir)?;
 
@@ -86,47 +86,6 @@ pub fn is_installed() -> bool {
     Path::new(&localappdata)
         .join("TinyWiiBackupManager")
         .exists()
-}
-
-pub fn uninstall(is_uninstaller: bool) -> Result<()> {
-    let appdata = env::var("APPDATA")?;
-    let localappdata = env::var("LOCALAPPDATA")?;
-    let userprofile = env::var("USERPROFILE")?;
-
-    let shortcut_path = Path::new(&userprofile)
-        .join("Desktop")
-        .join("TinyWiiBackupManager.lnk");
-    if shortcut_path.exists() {
-        fs::remove_file(&shortcut_path)?;
-    }
-
-    let start_menu_dir = Path::new(&appdata)
-        .join("Microsoft")
-        .join("Windows")
-        .join("Start Menu")
-        .join("Programs")
-        .join("TinyWiiBackupManager");
-    if start_menu_dir.exists() {
-        fs::remove_dir_all(&start_menu_dir)?;
-    }
-
-    let data_dir = Path::new(&appdata).join("mq1").join("TinyWiiBackupManager");
-    if data_dir.exists() {
-        fs::remove_dir_all(&data_dir)?;
-    }
-
-    reg::remove_reg_keys()?;
-
-    let install_dir = Path::new(&localappdata).join("TinyWiiBackupManager");
-    if is_uninstaller {
-        self_destruct(&install_dir)?;
-    } else {
-        if install_dir.exists() {
-            fs::remove_dir_all(&install_dir)?;
-        }
-    }
-
-    Ok(())
 }
 
 pub async fn download(version: String, os: Os, arch: Arch) -> Result<(String, Vec<u8>)> {
@@ -232,33 +191,6 @@ pub fn get_arch() -> Arch {
         Ok("ARM64") => Arch::Aarch64,
         _ => Arch::I686,
     }
-}
-
-pub fn self_destruct(install_dir: &Path) -> Result<()> {
-    let temp_dir = env::temp_dir();
-    let cleanup_bat = temp_dir.join("twbm_cleanup.bat");
-
-    let batch_content = format!(
-        "@echo off\r\n\
-         :LOOP\r\n\
-         ping 127.0.0.1 -n 2 > nul\r\n\
-         rmdir /s /q \"{}\"\r\n\
-         if exist \"{}\" goto LOOP\r\n\
-         del \"%~f0\"",
-        install_dir.to_string_lossy(),
-        install_dir.to_string_lossy()
-    );
-
-    fs::write(&cleanup_bat, batch_content)?;
-
-    // Spawn the CMD process independent of this Rust process
-    Command::new("cmd")
-        .args(["/C", "start", "/B", &cleanup_bat.to_string_lossy()])
-        .current_dir(env::temp_dir())
-        .creation_flags(0x08000000) // CREATE_NO_WINDOW (run invisibly)
-        .spawn()?;
-
-    Ok(())
 }
 
 pub fn launch_twbm() -> Result<()> {
