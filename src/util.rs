@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use anyhow::{Result, anyhow};
-use base64::Engine;
-use base64::prelude::BASE64_STANDARD;
 use std::fs::File;
 use std::io::{self, Write};
 use std::os::windows::process::CommandExt;

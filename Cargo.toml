@@ -16,7 +16,6 @@ zip = { version = "7", default-features = false, features = [
   "deflate-flate2-zlib-rs",
 ] }
 anyhow = "1"
-base64 = "0.22"
 
 [profile.release]
 opt-level = "z"
