@@ -2,23 +2,37 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use anyhow::{Result, anyhow};
+use directories::{BaseDirs, UserDirs};
+use mslnk::ShellLink;
 use std::fs::File;
-use std::io::{self, Write};
+use std::io;
 use std::os::windows::process::CommandExt;
-use std::process::Stdio;
 use std::{env, fs, io::Cursor, path::Path, process::Command};
+use windows_registry::CURRENT_USER;
 use zip::ZipArchive;
 
-const POSTINSTALL_PS1: &str = include_str!("../postinstall.ps1");
 const UNINSTALL_PS1: &[u8] = include_bytes!("../uninstall.ps1");
 
 pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
+    let base_dirs = BaseDirs::new().ok_or(anyhow!("Failed to get base dirs"))?;
+    let user_dirs = UserDirs::new().ok_or(anyhow!("Failed to get user dirs"))?;
+    let install_dir = base_dirs.data_local_dir().join("TinyWiiBackupManager");
+    let install_dir_str = install_dir
+        .to_str()
+        .ok_or(anyhow!("Failed to get install dir"))?;
+    let exe_path = install_dir.join("TinyWiiBackupManager.exe");
+    let exe_path_str = exe_path.to_str().ok_or(anyhow!("Failed to get exe path"))?;
+    let uninstaller_path = install_dir.join("uninstall.ps1");
+    let uninstaller_path_str = uninstaller_path
+        .to_str()
+        .ok_or(anyhow!("Failed to get uninstaller path"))?;
+    let desktop_dir = user_dirs
+        .desktop_dir()
+        .ok_or(anyhow!("Failed to get desktop dir"))?;
+
     // Open the archive
     let cursor = Cursor::new(bytes);
     let mut archive = ZipArchive::new(cursor)?;
-
-    let localappdata = env::var("LOCALAPPDATA")?;
-    let install_dir = Path::new(&localappdata).join("TinyWiiBackupManager");
 
     // Remove existing install
     if install_dir.exists() {
@@ -34,25 +48,47 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
     io::copy(&mut archived_exe, &mut file)?;
 
     // Write the uninstaller script
-    fs::write(install_dir.join("uninstall.ps1"), UNINSTALL_PS1)?;
+    fs::write(&uninstaller_path, UNINSTALL_PS1)?;
 
-    // Run postinstall script
-    let postinstall = POSTINSTALL_PS1.replace("TWBM_VERSION", &version);
-
-    let mut child = Command::new("powershell")
-        .arg("-NoProfile")
-        .arg("-NonInteractive")
-        .arg("-Command")
-        .arg("-")
-        .creation_flags(0x08000000)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()?;
-    {
-        let stdin = child.stdin.as_mut().ok_or(anyhow!("failed to get stdin"))?;
-        stdin.write_all(postinstall.as_bytes())?;
+    // Create desktop shortcut
+    let desktop_shortcut_path = desktop_dir.join("TinyWiiBackupManager.lnk");
+    if desktop_shortcut_path.exists() {
+        fs::remove_file(&desktop_shortcut_path)?;
     }
-    child.wait()?;
+    let mut sl = ShellLink::new(&exe_path)?;
+    sl.set_working_dir(install_dir.to_str().map(String::from));
+    sl.set_icon_location(exe_path.to_str().map(String::from));
+    sl.set_name(Some("TinyWiiBackupManager".to_string()));
+    sl.create_lnk(&desktop_shortcut_path)?;
+
+    // Create start menu shortcut
+    let start_menu_dir = base_dirs
+        .data_dir()
+        .join(r"Microsoft\Windows\Start Menu\Programs\TinyWiiBackupManager");
+    if start_menu_dir.exists() {
+        fs::remove_dir_all(&start_menu_dir)?;
+    }
+    fs::create_dir_all(&start_menu_dir)?;
+    let start_menu_shortcut_path = start_menu_dir.join("TinyWiiBackupManager.lnk");
+    fs::copy(&desktop_shortcut_path, &start_menu_shortcut_path)?;
+
+    // Write windows registry keys
+    let key = CURRENT_USER
+        .create("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\TinyWiiBackupManager")?;
+
+    let uninstall_cmd = format!(
+        "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File \"{}\"",
+        uninstaller_path_str
+    );
+
+    key.set_string("DisplayName", "TinyWiiBackupManager")?;
+    key.set_string("DisplayVersion", version)?;
+    key.set_string("Publisher", "Manuel Quarneti")?;
+    key.set_string("InstallLocation", install_dir_str)?;
+    key.set_string("DisplayIcon", exe_path_str)?;
+    key.set_string("UninstallString", &uninstall_cmd)?;
+    key.set_u32("NoModify", 1)?;
+    key.set_u32("NoRepair", 1)?;
 
     Ok(version)
 }
