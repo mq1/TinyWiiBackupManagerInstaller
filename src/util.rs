@@ -10,7 +10,7 @@ use std::os::windows::process::CommandExt;
 use std::{env, fs, io::Cursor, path::Path, process::Command};
 use zip::ZipArchive;
 
-const POSTINSTALL_PS1: &[u8] = include_bytes!("../postinstall.ps1");
+const POSTINSTALL_PS1: &str = include_str!("../postinstall.ps1");
 const UNINSTALL_PS1: &[u8] = include_bytes!("../uninstall.ps1");
 
 pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
@@ -38,7 +38,8 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
     fs::write(install_dir.join("uninstall.ps1"), UNINSTALL_PS1)?;
 
     // Run postinstall script
-    let encoded = BASE64_STANDARD.encode(POSTINSTALL_PS1);
+    let postinstall = POSTINSTALL_PS1.replace("TWBM_VERSION", &version);
+    let encoded = BASE64_STANDARD.encode(postinstall);
     let _output = Command::new("powershell")
         .args(["-NoProfile", "-EncodedCommand", &encoded])
         .output()?;

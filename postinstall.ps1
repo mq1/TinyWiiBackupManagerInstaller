@@ -1,11 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Manuel Quarneti <mq1@ik.me>
 # SPDX-License-Identifier: GPL-3.0-only
 
-param (
-    [Parameter(Mandatory=$true)]
-    [string]$Version
-)
-
 $regKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager"
 $installDir = Join-Path $env:LOCALAPPDATA "TinyWiiBackupManager"
 $exePath = Join-Path $installDir "TinyWiiBackupManager.exe"
@@ -41,7 +36,7 @@ if (Test-Path $regKey) {
 }
 New-Item -Path $regKey -Force | Out-Null
 Set-ItemProperty -Path $regKey -Name "DisplayName" -Value "TinyWiiBackupManager" -Type String
-Set-ItemProperty -Path $regKey -Name "DisplayVersion" -Value $Version -Type String
+Set-ItemProperty -Path $regKey -Name "DisplayVersion" -Value "TWBM_VERSION" -Type String
 Set-ItemProperty -Path $regKey -Name "Publisher" -Value "Manuel Quarneti" -Type String
 Set-ItemProperty -Path $regKey -Name "InstallLocation" -Value $installDir -Type String
 Set-ItemProperty -Path $regKey -Name "DisplayIcon" -Value $exePath -Type String
