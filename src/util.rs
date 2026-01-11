@@ -122,7 +122,7 @@ pub async fn download_to_dir(
     dest_dir: PathBuf,
 ) -> Result<(String, PathBuf)> {
     let (version, bytes) = download(version, os, arch).await?;
-    let dest_path = dest_dir.join(format!("TinyWiiBackupManager-{}-portable.exe", version));
+    let dest_path = dest_dir.join(format!("TinyWiiBackupManager-v{}-portable.exe", version));
 
     let cursor = Cursor::new(bytes);
     let mut archive = ZipArchive::new(cursor)?;
