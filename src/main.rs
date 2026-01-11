@@ -11,8 +11,10 @@ use crate::util::{Arch, Os};
 use iced::{
     Alignment, Element, Length, Size, Task,
     futures::TryFutureExt,
-    widget::{button, column, container, space, text},
+    widget::{button, column, container, row, space, text},
 };
+use native_dialog::DialogBuilder;
+use std::path::PathBuf;
 
 enum State {
     FetchingLatestVersion,
@@ -20,6 +22,7 @@ enum State {
     Downloading(String),
     Installing(String),
     Installed(String),
+    InstalledPortable(String, PathBuf),
     Errored(String),
 }
 
@@ -29,7 +32,10 @@ enum Message {
     Download(String, Os, Arch),
     Downloaded(Result<(String, Vec<u8>), String>),
     Installed(Result<String, String>),
+    DownloadPortable(String, Os, Arch),
+    DownloadedPortable(Result<(String, PathBuf), String>),
     LaunchTwbm,
+    LaunchTwbmPortable(PathBuf),
 }
 
 impl State {
@@ -49,6 +55,10 @@ impl State {
                 let os = util::get_os().unwrap_or_default();
                 let arch = util::get_arch();
                 let is_installed = util::is_installed().unwrap_or(false);
+                let install_str = match is_installed {
+                    true => "Update/Reinstall",
+                    false => "Download and Install",
+                };
 
                 column![
                     text(format!("Latest version: v{}", version)),
@@ -58,13 +68,14 @@ impl State {
                     space(),
                     space(),
                     space(),
-                    button(if is_installed {
-                        "Update/Reinstall"
-                    } else {
-                        "Download and Install"
-                    })
-                    .style(style::rounded_button)
-                    .on_press(Message::Download(version.clone(), os, arch)),
+                    row![
+                        button(install_str)
+                            .style(style::rounded_button)
+                            .on_press(Message::Download(version.clone(), os, arch)),
+                        button("Download Portable")
+                            .style(style::rounded_button)
+                            .on_press(Message::DownloadPortable(version.clone(), os, arch)),
+                    ]
                 ]
                 .spacing(5)
                 .align_x(Alignment::Center)
@@ -77,6 +88,16 @@ impl State {
                 button("→ Launch TinyWiiBackupManager")
                     .style(style::rounded_button)
                     .on_press(Message::LaunchTwbm)
+            ]
+            .spacing(10)
+            .align_x(Alignment::Center)
+            .into(),
+            State::InstalledPortable(version, path) => column![
+                text(format!("TinyWiiBackupManager v{} installed", version)),
+                text(format!("Path: {}", path.display())),
+                button("→ Launch TinyWiiBackupManager")
+                    .style(style::rounded_button)
+                    .on_press(Message::LaunchTwbmPortable(path.clone()))
             ]
             .spacing(10)
             .align_x(Alignment::Center)
@@ -127,7 +148,43 @@ impl State {
                     Task::none()
                 }
             },
+            Message::DownloadPortable(version, os, arch) => {
+                let dest_dir = DialogBuilder::file()
+                    .set_title("Select destination directory")
+                    .open_single_dir()
+                    .show()
+                    .unwrap_or_default();
+
+                if let Some(dest_dir) = dest_dir {
+                    *self = State::Downloading(version.clone());
+                    Task::perform(
+                        util::download_to_dir(version, os, arch, dest_dir)
+                            .map_err(|e| e.to_string()),
+                        Message::DownloadedPortable,
+                    )
+                } else {
+                    Task::none()
+                }
+            }
+            Message::DownloadedPortable(res) => {
+                match res {
+                    Ok((version, path)) => {
+                        *self = State::InstalledPortable(version.clone(), path);
+                    }
+                    Err(e) => {
+                        *self = State::Errored(e);
+                    }
+                }
+                Task::none()
+            }
             Message::LaunchTwbm => match util::launch_twbm() {
+                Ok(()) => iced::exit(),
+                Err(e) => {
+                    *self = State::Errored(e.to_string());
+                    Task::none()
+                }
+            },
+            Message::LaunchTwbmPortable(path) => match util::launch_twbm_portable(path) {
                 Ok(()) => iced::exit(),
                 Err(e) => {
                     *self = State::Errored(e.to_string());

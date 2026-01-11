@@ -7,6 +7,7 @@ use mslnk::ShellLink;
 use std::fs::File;
 use std::io;
 use std::os::windows::process::CommandExt;
+use std::path::PathBuf;
 use std::{env, fs, io::Cursor, path::Path, process::Command};
 use windows_registry::{CURRENT_USER, LOCAL_MACHINE};
 use zip::ZipArchive;
@@ -114,6 +115,29 @@ pub async fn download(version: String, os: Os, arch: Arch) -> Result<(String, Ve
     Ok((version, bytes))
 }
 
+pub async fn download_to_dir(
+    version: String,
+    os: Os,
+    arch: Arch,
+    dest_dir: PathBuf,
+) -> Result<(String, PathBuf)> {
+    let (version, bytes) = download(version, os, arch).await?;
+    let dest_path = dest_dir.join(format!("TinyWiiBackupManager-{}-portable.exe", version));
+
+    let cursor = Cursor::new(bytes);
+    let mut archive = ZipArchive::new(cursor)?;
+
+    if dest_path.exists() {
+        fs::remove_file(&dest_path)?;
+    }
+
+    let mut file = File::create(&dest_path)?;
+    let mut archived_exe = archive.by_name("TinyWiiBackupManager.exe")?;
+    io::copy(&mut archived_exe, &mut file)?;
+
+    Ok((version, dest_path))
+}
+
 pub async fn get_latest_version() -> Result<String> {
     let version = minreq::get(
         "https://github.com/mq1/TinyWiiBackupManager/releases/latest/download/version.txt",
@@ -213,6 +237,19 @@ pub fn launch_twbm() -> Result<()> {
     Command::new("cmd")
         .args(["/C", "start", "/B", exe_path_str])
         .current_dir(install_dir)
+        .creation_flags(0x08000000) // CREATE_NO_WINDOW (run invisibly)
+        .spawn()?;
+
+    Ok(())
+}
+
+pub fn launch_twbm_portable(exe_path: PathBuf) -> Result<()> {
+    let parent = exe_path.parent().ok_or(anyhow!("Failed to get parent"))?;
+    let exe_path_str = exe_path.to_str().ok_or(anyhow!("Failed to get exe path"))?;
+
+    Command::new("cmd")
+        .args(["/C", "start", "/B", exe_path_str])
+        .current_dir(parent)
         .creation_flags(0x08000000) // CREATE_NO_WINDOW (run invisibly)
         .spawn()?;
 
