@@ -8,7 +8,7 @@ use std::fs::File;
 use std::io;
 use std::os::windows::process::CommandExt;
 use std::path::PathBuf;
-use std::{env, fs, io::Cursor, path::Path, process::Command};
+use std::{env, fs, io::Cursor, process::Command};
 use windows_registry::{CURRENT_USER, LOCAL_MACHINE};
 use zip::ZipArchive;
 
@@ -149,7 +149,7 @@ pub async fn get_latest_version() -> Result<String> {
     Ok(version)
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default)]
 pub enum Os {
     #[default]
     Windows,
@@ -183,7 +183,7 @@ pub fn get_os() -> Result<Os> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum Arch {
     I686,
     X86_64,
