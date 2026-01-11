@@ -46,7 +46,7 @@ impl State {
         let content: Element<'_, Message> = match self {
             State::FetchingLatestVersion => text("Fetching latest version...").into(),
             State::GotLatestVersion(version) => {
-                let os = util::get_os();
+                let os = util::get_os().unwrap_or_default();
                 let arch = util::get_arch();
                 let is_installed = util::is_installed();
 

@@ -8,7 +8,7 @@ use std::fs::File;
 use std::io;
 use std::os::windows::process::CommandExt;
 use std::{env, fs, io::Cursor, path::Path, process::Command};
-use windows_registry::CURRENT_USER;
+use windows_registry::{CURRENT_USER, LOCAL_MACHINE};
 use zip::ZipArchive;
 
 const UNINSTALL_PS1: &[u8] = include_bytes!("../uninstall.ps1");
@@ -82,7 +82,7 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
     );
 
     key.set_string("DisplayName", "TinyWiiBackupManager")?;
-    key.set_string("DisplayVersion", version)?;
+    key.set_string("DisplayVersion", &version)?;
     key.set_string("Publisher", "Manuel Quarneti")?;
     key.set_string("InstallLocation", install_dir_str)?;
     key.set_string("DisplayIcon", exe_path_str)?;
@@ -129,8 +129,9 @@ pub async fn get_latest_version() -> Result<String> {
     Ok(version)
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub enum Os {
+    #[default]
     Windows,
     Windows7,
 }
@@ -151,16 +152,14 @@ impl Os {
     }
 }
 
-pub fn get_os() -> Os {
-    if Command::new("cmd")
-        .args(["/c", "ver"])
-        .creation_flags(0x08000000)
-        .output()
-        .is_ok_and(|o| String::from_utf8_lossy(&o.stdout).contains("Version 10"))
-    {
-        Os::Windows
+pub fn get_os() -> Result<Os> {
+    let key = LOCAL_MACHINE.open("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion")?;
+    let product_name = key.get_string("ProductName")?;
+
+    if product_name.contains("Windows 10") {
+        Ok(Os::Windows)
     } else {
-        Os::Windows7
+        Ok(Os::Windows7)
     }
 }
 
