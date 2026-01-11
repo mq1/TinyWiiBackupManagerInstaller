@@ -127,15 +127,13 @@ impl State {
                     Task::none()
                 }
             },
-            Message::LaunchTwbm => {
-                match util::launch_twbm() {
-                    Ok(()) => {
-                        std::process::exit(0);
-                    }
-                    Err(e) => *self = State::Errored(e.to_string()),
+            Message::LaunchTwbm => match util::launch_twbm() {
+                Ok(()) => iced::exit(),
+                Err(e) => {
+                    *self = State::Errored(e.to_string());
+                    Task::none()
                 }
-                Task::none()
-            }
+            },
         }
     }
 }
