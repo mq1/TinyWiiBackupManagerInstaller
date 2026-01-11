@@ -8,9 +8,3 @@ pub fn rounded_button(theme: &Theme, status: button::Status) -> button::Style {
     style.border.radius = border::radius(30);
     style
 }
-
-pub fn rounded_danger_button(theme: &Theme, status: button::Status) -> button::Style {
-    let mut style = button::danger(theme, status);
-    style.border.radius = border::radius(30);
-    style
-}

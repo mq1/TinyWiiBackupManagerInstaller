@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: 2026 Manuel Quarneti <mq1@ik.me>
 // SPDX-License-Identifier: GPL-3.0-only
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
 use std::fs::File;
-use std::io;
+use std::io::{self, Write};
 use std::os::windows::process::CommandExt;
+use std::process::Stdio;
 use std::{env, fs, io::Cursor, path::Path, process::Command};
 use zip::ZipArchive;
 
@@ -39,10 +40,21 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
 
     // Run postinstall script
     let postinstall = POSTINSTALL_PS1.replace("TWBM_VERSION", &version);
-    let encoded = BASE64_STANDARD.encode(postinstall);
-    let _output = Command::new("powershell")
-        .args(["-NoProfile", "-EncodedCommand", &encoded])
-        .output()?;
+
+    let mut child = Command::new("powershell")
+        .arg("-NoProfile")
+        .arg("-NonInteractive")
+        .arg("-Command")
+        .arg("-")
+        .creation_flags(0x08000000)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()?;
+    {
+        let stdin = child.stdin.as_mut().ok_or(anyhow!("failed to get stdin"))?;
+        stdin.write_all(postinstall.as_bytes())?;
+    }
+    child.wait()?;
 
     Ok(version)
 }
