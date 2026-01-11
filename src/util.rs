@@ -205,11 +205,13 @@ pub fn get_arch() -> Arch {
 }
 
 pub fn launch_twbm() -> Result<()> {
-    let install_dir = Path::new(&env::var("LOCALAPPDATA")?).join("TinyWiiBackupManager");
+    let base_dirs = BaseDirs::new().ok_or(anyhow!("Failed to get base dirs"))?;
+    let install_dir = base_dirs.data_local_dir().join("TinyWiiBackupManager");
     let exe_path = install_dir.join("TinyWiiBackupManager.exe");
+    let exe_path_str = exe_path.to_str().ok_or(anyhow!("Failed to get exe path"))?;
 
     Command::new("cmd")
-        .args(["/C", "start", "/B", &exe_path.to_string_lossy()])
+        .args(["/C", "start", "/B", exe_path_str])
         .current_dir(install_dir)
         .creation_flags(0x08000000) // CREATE_NO_WINDOW (run invisibly)
         .spawn()?;
