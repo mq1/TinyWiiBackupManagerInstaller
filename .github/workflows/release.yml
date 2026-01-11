@@ -29,7 +29,7 @@ jobs:
 
       - name: Build binary
         shell: pwsh
-        run: cargo build -Z build-std=std,panic_abort --release --locked --target i686-win7-windows-msvc
+        run: cargo build -Z build-std=std,panic_abort -Z build-std-features="optimize_for_size" --release --locked --target i686-win7-windows-msvc
         env:
           RUSTC_BOOTSTRAP: 1
           CARGO_TARGET_I686_WIN7_WINDOWS_MSVC_LINKER: rust-lld.exe
