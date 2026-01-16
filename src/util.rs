@@ -9,9 +9,9 @@ use smol::{
     fs::{self, File},
     io,
 };
-use std::os::windows::process::CommandExt;
 use std::path::PathBuf;
 use std::process::Command;
+use std::{env, os::windows::process::CommandExt};
 use windows_registry::{CURRENT_USER, LOCAL_MACHINE};
 
 const UNINSTALL_PS1: &[u8] = include_bytes!("../uninstall.ps1");
@@ -34,8 +34,8 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
         .ok_or(anyhow!("Failed to get desktop dir"))?;
 
     // Open the archive
-    let mut zip = ZipFileReader::new(bytes).await?;
-    let mut exe_i = zip
+    let zip = ZipFileReader::new(bytes).await?;
+    let exe_i = zip
         .file()
         .entries()
         .iter()
@@ -138,8 +138,8 @@ pub async fn download_to_dir(
     let (version, bytes) = download(version, os, arch).await?;
     let dest_path = dest_dir.join(format!("TinyWiiBackupManager-v{}-portable.exe", version));
 
-    let mut zip = ZipFileReader::new(bytes).await?;
-    let mut exe_i = zip
+    let zip = ZipFileReader::new(bytes).await?;
+    let exe_i = zip
         .file()
         .entries()
         .iter()
