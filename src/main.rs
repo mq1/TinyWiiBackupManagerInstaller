@@ -14,7 +14,7 @@ use iced::{
     widget::{button, column, container, row, space, text},
 };
 use native_dialog::DialogBuilder;
-use std::path::PathBuf;
+use std::{env, path::PathBuf};
 
 enum State {
     FetchingLatestVersion,
@@ -196,6 +196,10 @@ impl State {
 }
 
 fn main() -> iced::Result {
+    unsafe {
+        env::set_var("SMOL_THREADS", "1");
+    }
+
     iced::application(State::new, State::update, State::view)
         .window_size(Size::new(500.0, 300.0))
         .resizable(false)

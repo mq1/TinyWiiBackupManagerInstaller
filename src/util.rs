@@ -110,7 +110,10 @@ pub async fn download(version: String, os: Os, arch: Arch) -> Result<(String, Ve
         arch.as_str()
     );
 
-    let bytes = minreq::get(&url).send()?.into_bytes();
+    let bytes = smol::unblock(|| -> Result<Vec<u8>, minreq::Error> {
+        minreq::get(&url).send().map(|resp| resp.into_bytes())
+    })
+    .await;
 
     Ok((version, bytes))
 }
@@ -139,12 +142,16 @@ pub async fn download_to_dir(
 }
 
 pub async fn get_latest_version() -> Result<String> {
-    let version = minreq::get(
-        "https://github.com/mq1/TinyWiiBackupManager/releases/latest/download/version.txt",
-    )
-    .send()?
-    .as_str()?
-    .to_string();
+    const VERSION_URL: &str =
+        "https://github.com/mq1/TinyWiiBackupManager/releases/latest/download/version.txt";
+
+    let version = smol::unblock(|| -> Result<String, minreq::Error> {
+        minreq::get(VERSION_URL)
+            .send()
+            .and_then(|resp| resp.as_str())
+            .map(|version| version.to_string())
+    })
+    .await;
 
     Ok(version)
 }
