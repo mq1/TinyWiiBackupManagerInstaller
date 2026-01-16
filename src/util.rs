@@ -11,6 +11,7 @@ use smol::{
 };
 use std::os::windows::process::CommandExt;
 use std::path::PathBuf;
+use std::process::Command;
 use windows_registry::{CURRENT_USER, LOCAL_MACHINE};
 
 const UNINSTALL_PS1: &[u8] = include_bytes!("../uninstall.ps1");
@@ -55,16 +56,16 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
 
     // Extract the dist .zip into the install dir
     let mut exe = zip.reader_without_entry(exe_i).await?;
-    let mut file = File::create(install_dir.join("TinyWiiBackupManager.exe"))?;
-    io::copy(&mut exe, &mut file)?;
+    let mut file = File::create(install_dir.join("TinyWiiBackupManager.exe")).await?;
+    io::copy(&mut exe, &mut file).await?;
 
     // Write the uninstaller script
-    fs::write(&uninstaller_path, UNINSTALL_PS1)?;
+    fs::write(&uninstaller_path, UNINSTALL_PS1).await?;
 
     // Create desktop shortcut
     let desktop_shortcut_path = desktop_dir.join("TinyWiiBackupManager.lnk");
     if desktop_shortcut_path.exists() {
-        fs::remove_file(&desktop_shortcut_path)?;
+        fs::remove_file(&desktop_shortcut_path).await?;
     }
     let mut sl = ShellLink::new(&exe_path)?;
     sl.set_working_dir(install_dir.to_str().map(String::from));
@@ -77,11 +78,11 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
         .data_dir()
         .join("Microsoft\\Windows\\Start Menu\\Programs\\TinyWiiBackupManager");
     if start_menu_dir.exists() {
-        fs::remove_dir_all(&start_menu_dir)?;
+        fs::remove_dir_all(&start_menu_dir).await?;
     }
-    fs::create_dir_all(&start_menu_dir)?;
+    fs::create_dir_all(&start_menu_dir).await?;
     let start_menu_shortcut_path = start_menu_dir.join("TinyWiiBackupManager.lnk");
-    fs::copy(&desktop_shortcut_path, &start_menu_shortcut_path)?;
+    fs::copy(&desktop_shortcut_path, &start_menu_shortcut_path).await?;
 
     // Write windows registry keys
     let key = CURRENT_USER
@@ -150,9 +151,9 @@ pub async fn download_to_dir(
         .ok_or(anyhow!("Failed to find TinyWiiBackupManager.exe"))?;
 
     if dest_path.exists() {
-        fs::remove_file(&dest_path)?;
+        fs::remove_file(&dest_path).await?;
     }
-    let mut file = File::create(&dest_path)?;
+    let mut file = File::create(&dest_path).await?;
     let mut exe = zip.reader_without_entry(exe_i).await?;
     io::copy(&mut exe, &mut file).await?;
 
