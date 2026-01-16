@@ -17,15 +17,13 @@ iced = { version = "0.14", default-features = false, features = [
   "tiny-skia",
 ] }
 minreq = { version = "2", features = ["https"] }
-zip = { version = "7", default-features = false, features = [
-  "deflate-flate2-zlib-rs",
-] }
 anyhow = "1"
 mslnk = "0.1"
 directories = "6"
 windows-registry = "0.6"
 native-dialog = "0.9"
 smol = "2"
+async_zip = { version = "0.0.18", features = ["deflate"] }
 
 [build-dependencies]
 winresource = "0.1"
