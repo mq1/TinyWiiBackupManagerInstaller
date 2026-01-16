@@ -113,7 +113,7 @@ pub async fn download(version: String, os: Os, arch: Arch) -> Result<(String, Ve
     let bytes = smol::unblock(|| -> Result<Vec<u8>, minreq::Error> {
         minreq::get(&url).send().map(|resp| resp.into_bytes())
     })
-    .await;
+    .await?;
 
     Ok((version, bytes))
 }
@@ -151,7 +151,7 @@ pub async fn get_latest_version() -> Result<String> {
             .and_then(|resp| resp.as_str())
             .map(|version| version.to_string())
     })
-    .await;
+    .await?;
 
     Ok(version)
 }
