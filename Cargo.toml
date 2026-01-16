@@ -1,10 +1,15 @@
 [package]
 name = "TinyWiiBackupManagerInstaller"
-version = "0.1.0-beta.4"
+version = "0.1.0-beta.5"
 edition = "2024"
 rust-version = "1.92"
 authors = ["Manuel Quarneti <mq1@ik.me>"]
 license = "GPL-3.0-only"
+build = "build.rs"
+
+[package.metadata.winresource]
+OriginalFilename = "TinyWiiBackupManagerInstaller.exe"
+LegalCopyright = "Copyright © 2026 Manuel Quarneti. Licensed under GPL-3.0-only."
 
 [dependencies]
 iced = { version = "0.14", default-features = false, features = [
@@ -12,7 +17,7 @@ iced = { version = "0.14", default-features = false, features = [
   "tiny-skia",
 ] }
 minreq = { version = "2.14", features = ["https"] }
-zip = { version = "7.0", default-features = false, features = [
+zip = { version = "7.1", default-features = false, features = [
   "deflate-flate2-zlib-rs",
 ] }
 anyhow = "1.0"
@@ -20,6 +25,9 @@ mslnk = "0.1"
 directories = "6.0"
 windows-registry = "0.6"
 native-dialog = "0.9"
+
+[build-dependencies]
+winresource = "0.1"
 
 [profile.release]
 opt-level = "z"
