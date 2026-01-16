@@ -61,9 +61,9 @@ impl State {
                 };
 
                 column![
-                    text(format!("Latest version: v{}", version)),
-                    text(format!("Detected OS: {}", os.as_display_str())),
-                    text(format!("Detected arch: {}", arch.as_display_str())),
+                    text!("Latest version: v{}", version),
+                    text!("Detected OS: {}", os),
+                    text!("Detected arch: {}", arch),
                     space(),
                     space(),
                     space(),
@@ -82,10 +82,10 @@ impl State {
                 .align_x(Alignment::Center)
                 .into()
             }
-            State::Downloading(version) => text(format!("Downloading v{}", version)).into(),
-            State::Installing(version) => text(format!("Installing v{}", version)).into(),
+            State::Downloading(version) => text!("Downloading v{}", version).into(),
+            State::Installing(version) => text!("Installing v{}", version).into(),
             State::Installed(version) => column![
-                text(format!("TinyWiiBackupManager v{} installed", version)),
+                text!("TinyWiiBackupManager v{} installed", version),
                 button("› Launch TinyWiiBackupManager")
                     .style(style::rounded_button)
                     .on_press(Message::LaunchTwbm)
@@ -94,7 +94,7 @@ impl State {
             .align_x(Alignment::Center)
             .into(),
             State::InstalledPortable(version, path) => column![
-                text(format!("TinyWiiBackupManager v{} installed", version)),
+                text!("TinyWiiBackupManager v{} installed", version),
                 button("› Launch TinyWiiBackupManager")
                     .style(style::rounded_button)
                     .on_press(Message::LaunchTwbmPortable(path.clone()))
@@ -102,7 +102,7 @@ impl State {
             .spacing(10)
             .align_x(Alignment::Center)
             .into(),
-            State::Errored(msg) => text(format!("Error: {}", msg)).into(),
+            State::Errored(msg) => text!("Error: {}", msg).into(),
         };
 
         container(content).center(Length::Fill).padding(10).into()

@@ -9,9 +9,9 @@ use smol::{
     fs::{self, File},
     io,
 };
-use std::path::PathBuf;
 use std::process::Command;
 use std::{env, os::windows::process::CommandExt};
+use std::{fmt, path::PathBuf};
 use windows_registry::{CURRENT_USER, LOCAL_MACHINE};
 
 const UNINSTALL_PS1: &[u8] = include_bytes!("../uninstall.ps1");
@@ -188,12 +188,15 @@ impl Os {
             Os::Windows7 => "windows7",
         }
     }
+}
 
-    pub fn as_display_str(&self) -> &'static str {
-        match self {
+impl fmt::Display for Os {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
             Os::Windows => "Windows 10+",
             Os::Windows7 => "Windows 7/8/8.1",
-        }
+        };
+        write!(f, "{}", s)
     }
 }
 
@@ -225,14 +228,18 @@ impl Arch {
             Arch::Aarch64 => "arm64",
         }
     }
+}
 
-    pub fn as_display_str(&self) -> &'static str {
-        match self {
+impl fmt::Display for Arch {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
             Arch::I686 => "x86 (32-bit)",
             Arch::X86_64 => "x86 (64-bit)",
             Arch::X86_64v3 => "x86 (64-bit with AVX2 instructions)",
             Arch::Aarch64 => "ARM64",
-        }
+        };
+
+        write!(f, "{}", s)
     }
 }
 
