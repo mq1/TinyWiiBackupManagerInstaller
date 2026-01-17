@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use anyhow::{Result, anyhow};
+use async_compat::CompatExt;
 use async_zip::base::read::mem::ZipFileReader;
 use directories::{BaseDirs, UserDirs};
 use mslnk::ShellLink;
@@ -15,6 +16,7 @@ use std::{fmt, path::PathBuf};
 use windows_registry::{CURRENT_USER, LOCAL_MACHINE};
 
 const UNINSTALL_PS1: &[u8] = include_bytes!("../uninstall.ps1");
+const USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
 
 pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
     let base_dirs = BaseDirs::new().ok_or(anyhow!("Failed to get base dirs"))?;
@@ -121,10 +123,12 @@ pub async fn download(version: String, os: Os, arch: Arch) -> Result<(String, Ve
         arch.as_str()
     );
 
-    let bytes = smol::unblock(move || -> Result<Vec<u8>, minreq::Error> {
-        minreq::get(&url).send().map(|resp| resp.into_bytes())
-    })
-    .await?;
+    let bytes = bitreq::get(&url)
+        .with_header("User-Agent", USER_AGENT)
+        .send_async()
+        .compat()
+        .await?
+        .into_bytes();
 
     Ok((version, bytes))
 }
@@ -164,12 +168,13 @@ pub async fn get_latest_version() -> Result<String> {
     const VERSION_URL: &str =
         "https://github.com/mq1/TinyWiiBackupManager/releases/latest/download/version.txt";
 
-    let version = smol::unblock(move || -> Result<String, minreq::Error> {
-        minreq::get(VERSION_URL)
-            .send()
-            .and_then(|resp| resp.as_str().map(|s| s.to_string()))
-    })
-    .await?;
+    let version = bitreq::get(VERSION_URL)
+        .with_header("User-Agent", USER_AGENT)
+        .send_async()
+        .compat()
+        .await?
+        .as_str()?
+        .to_string();
 
     Ok(version)
 }
