@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use anyhow::{Result, anyhow};
-use async_compat::CompatExt;
 use async_zip::base::read::mem::ZipFileReader;
 use directories::{BaseDirs, UserDirs};
 use mslnk::ShellLink;
@@ -123,11 +122,9 @@ pub async fn download(version: String, os: Os, arch: Arch) -> Result<(String, Ve
         arch.as_str()
     );
 
-    let bytes = bitreq::get(&url)
+    let bytes = minreq::get(&url)
         .with_header("User-Agent", USER_AGENT)
-        .send_async()
-        .compat()
-        .await?
+        .send()?
         .into_bytes();
 
     Ok((version, bytes))
@@ -168,11 +165,9 @@ pub async fn get_latest_version() -> Result<String> {
     const VERSION_URL: &str =
         "https://github.com/mq1/TinyWiiBackupManager/releases/latest/download/version.txt";
 
-    let version = bitreq::get(VERSION_URL)
+    let version = minreq::get(VERSION_URL)
         .with_header("User-Agent", USER_AGENT)
-        .send_async()
-        .compat()
-        .await?
+        .send()?
         .as_str()?
         .to_string();
 
