@@ -148,7 +148,6 @@ Section "Install" SecInstall
   ; Create shortcuts
   CreateDirectory "$SMPROGRAMS\TinyWiiBackupManager"
   CreateShortcut "$SMPROGRAMS\TinyWiiBackupManager\TinyWiiBackupManager.lnk" "$INSTDIR\TinyWiiBackupManager.exe"
-  CreateShortcut "$SMPROGRAMS\TinyWiiBackupManager\Uninstall.lnk" "$INSTDIR\uninstall.exe"
   CreateShortcut "$DESKTOP\TinyWiiBackupManager.lnk" "$INSTDIR\TinyWiiBackupManager.exe"
 
 SectionEnd
