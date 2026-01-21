@@ -4,19 +4,19 @@
 use anyhow::{Result, anyhow};
 use directories::{BaseDirs, UserDirs};
 use mslnk::ShellLink;
+use std::env;
 use std::fs::{self, File};
-use std::io;
+use std::io::{self, Cursor};
+use std::os::windows::process::CommandExt;
 use std::process::Command;
-use std::{env, os::windows::process::CommandExt};
 use std::{fmt, path::PathBuf};
 use windows_registry::{CURRENT_USER, LOCAL_MACHINE};
 use zip::ZipArchive;
-use zip::read::ZipFile;
 
 const UNINSTALL_PS1: &[u8] = include_bytes!("../uninstall.ps1");
 const USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
 
-pub fn install(version: String, bytes: Vec<u8>) -> Result<String> {
+pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
     let base_dirs = BaseDirs::new().ok_or(anyhow!("Failed to get base dirs"))?;
     let user_dirs = UserDirs::new().ok_or(anyhow!("Failed to get user dirs"))?;
     let install_dir = base_dirs.data_local_dir().join("TinyWiiBackupManager");
@@ -34,8 +34,8 @@ pub fn install(version: String, bytes: Vec<u8>) -> Result<String> {
         .ok_or(anyhow!("Failed to get desktop dir"))?;
 
     // Open the archive
-    let archive = ZipArchive::new(bytes)?;
-    let exe = archive.by_name("TinyWiiBackupManager.exe")?;
+    let mut archive = ZipArchive::new(Cursor::new(bytes))?;
+    let mut exe = archive.by_name("TinyWiiBackupManager.exe")?;
 
     // Remove existing install
     if install_dir.exists() {
@@ -46,8 +46,9 @@ pub fn install(version: String, bytes: Vec<u8>) -> Result<String> {
     }
 
     // Extract the dist .zip into the install dir
-    let dest_path = install_dir.join("TinyWiiBackupManager.exe")?;
-    fs::write(dest_path, exe)?;
+    let dest_path = install_dir.join("TinyWiiBackupManager.exe");
+    let mut dest_file = File::create(&dest_path)?;
+    io::copy(&mut exe, &mut dest_file)?;
 
     // Write the uninstaller script
     fs::write(&uninstaller_path, UNINSTALL_PS1)?;
@@ -119,27 +120,28 @@ pub async fn download(version: String, os: Os, arch: Arch) -> Result<(String, Ve
     Ok((version, bytes))
 }
 
-pub fn download_to_dir(
+pub async fn download_to_dir(
     version: String,
     os: Os,
     arch: Arch,
     dest_dir: PathBuf,
 ) -> Result<(String, PathBuf)> {
-    let (version, bytes) = download(version, os, arch)?;
+    let (version, bytes) = download(version, os, arch).await?;
     let dest_path = dest_dir.join(format!("TinyWiiBackupManager-v{}-portable.exe", version));
 
-    let mut archive = ZipArchive::new(bytes)?;
+    let mut archive = ZipArchive::new(Cursor::new(bytes))?;
     let mut exe = archive.by_name("TinyWiiBackupManager.exe")?;
 
     if dest_path.exists() {
         fs::remove_file(&dest_path)?;
     }
-    fs::write(dest_path, exe)?;
+    let mut dest_file = File::create(&dest_path)?;
+    io::copy(&mut exe, &mut dest_file)?;
 
     Ok((version, dest_path))
 }
 
-pub fn get_latest_version() -> Result<String> {
+pub async fn get_latest_version() -> Result<String> {
     const VERSION_URL: &str =
         "https://github.com/mq1/TinyWiiBackupManager/releases/latest/download/version.txt";
 

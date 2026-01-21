@@ -14,7 +14,7 @@ use iced::{
     widget::{button, column, container, row, space, text},
 };
 use native_dialog::DialogBuilder;
-use std::{env, path::PathBuf};
+use std::path::PathBuf;
 
 enum State {
     FetchingLatestVersion,
@@ -121,7 +121,7 @@ impl State {
             Message::Download(version, os, arch) => {
                 *self = State::Downloading(version.clone());
                 Task::perform(
-                    async move || { util::download(version, os, arch) }.map_err(|e| e.to_string()),
+                    util::download(version, os, arch).map_err(|e| e.to_string()),
                     Message::Downloaded,
                 )
             }
@@ -129,7 +129,7 @@ impl State {
                 Ok((version, bytes)) => {
                     *self = State::Installing(version.clone());
                     Task::perform(
-                        async move || { util::install(version, bytes) }.map_err(|e| e.to_string()),
+                        util::install(version, bytes).map_err(|e| e.to_string()),
                         Message::Installed,
                     )
                 }
@@ -158,10 +158,8 @@ impl State {
                 if let Some(dest_dir) = dest_dir {
                     *self = State::Downloading(version.clone());
                     Task::perform(
-                        async move || {
-                            { util::download_to_dir(version, os, arch, dest_dir) }
-                                .map_err(|e| e.to_string())
-                        },
+                        util::download_to_dir(version, os, arch, dest_dir)
+                            .map_err(|e| e.to_string()),
                         Message::DownloadedPortable,
                     )
                 } else {
