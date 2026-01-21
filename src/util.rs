@@ -2,22 +2,21 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use anyhow::{Result, anyhow};
-use async_zip::base::read::mem::ZipFileReader;
 use directories::{BaseDirs, UserDirs};
 use mslnk::ShellLink;
-use smol::{
-    fs::{self, File},
-    io,
-};
+use std::fs::{self, File};
+use std::io;
 use std::process::Command;
 use std::{env, os::windows::process::CommandExt};
 use std::{fmt, path::PathBuf};
 use windows_registry::{CURRENT_USER, LOCAL_MACHINE};
+use zip::ZipArchive;
+use zip::read::ZipFile;
 
 const UNINSTALL_PS1: &[u8] = include_bytes!("../uninstall.ps1");
 const USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
 
-pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
+pub fn install(version: String, bytes: Vec<u8>) -> Result<String> {
     let base_dirs = BaseDirs::new().ok_or(anyhow!("Failed to get base dirs"))?;
     let user_dirs = UserDirs::new().ok_or(anyhow!("Failed to get user dirs"))?;
     let install_dir = base_dirs.data_local_dir().join("TinyWiiBackupManager");
@@ -35,38 +34,28 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
         .ok_or(anyhow!("Failed to get desktop dir"))?;
 
     // Open the archive
-    let zip = ZipFileReader::new(bytes).await?;
-    let exe_i = zip
-        .file()
-        .entries()
-        .iter()
-        .position(|e| {
-            e.filename()
-                .as_str()
-                .is_ok_and(|name| name == "TinyWiiBackupManager.exe")
-        })
-        .ok_or(anyhow!("Failed to find TinyWiiBackupManager.exe"))?;
+    let archive = ZipArchive::new(bytes)?;
+    let exe = archive.by_name("TinyWiiBackupManager.exe")?;
 
     // Remove existing install
     if install_dir.exists() {
-        fs::remove_dir_all(&install_dir).await?;
-        fs::create_dir(&install_dir).await?;
+        fs::remove_dir_all(&install_dir)?;
+        fs::create_dir(&install_dir)?;
     } else {
-        fs::create_dir_all(&install_dir).await?;
+        fs::create_dir_all(&install_dir)?;
     }
 
     // Extract the dist .zip into the install dir
-    let mut exe = zip.reader_without_entry(exe_i).await?;
-    let mut file = File::create(install_dir.join("TinyWiiBackupManager.exe")).await?;
-    io::copy(&mut exe, &mut file).await?;
+    let dest_path = install_dir.join("TinyWiiBackupManager.exe")?;
+    fs::write(dest_path, exe)?;
 
     // Write the uninstaller script
-    fs::write(&uninstaller_path, UNINSTALL_PS1).await?;
+    fs::write(&uninstaller_path, UNINSTALL_PS1)?;
 
     // Create desktop shortcut
     let desktop_shortcut_path = desktop_dir.join("TinyWiiBackupManager.lnk");
     if desktop_shortcut_path.exists() {
-        fs::remove_file(&desktop_shortcut_path).await?;
+        fs::remove_file(&desktop_shortcut_path)?;
     }
     let mut sl = ShellLink::new(&exe_path)?;
     sl.set_working_dir(install_dir.to_str().map(String::from));
@@ -79,11 +68,11 @@ pub async fn install(version: String, bytes: Vec<u8>) -> Result<String> {
         .data_dir()
         .join("Microsoft\\Windows\\Start Menu\\Programs\\TinyWiiBackupManager");
     if start_menu_dir.exists() {
-        fs::remove_dir_all(&start_menu_dir).await?;
+        fs::remove_dir_all(&start_menu_dir)?;
     }
-    fs::create_dir_all(&start_menu_dir).await?;
+    fs::create_dir_all(&start_menu_dir)?;
     let start_menu_shortcut_path = start_menu_dir.join("TinyWiiBackupManager.lnk");
-    fs::copy(&desktop_shortcut_path, &start_menu_shortcut_path).await?;
+    fs::copy(&desktop_shortcut_path, &start_menu_shortcut_path)?;
 
     // Write windows registry keys
     let key = CURRENT_USER
@@ -130,38 +119,27 @@ pub async fn download(version: String, os: Os, arch: Arch) -> Result<(String, Ve
     Ok((version, bytes))
 }
 
-pub async fn download_to_dir(
+pub fn download_to_dir(
     version: String,
     os: Os,
     arch: Arch,
     dest_dir: PathBuf,
 ) -> Result<(String, PathBuf)> {
-    let (version, bytes) = download(version, os, arch).await?;
+    let (version, bytes) = download(version, os, arch)?;
     let dest_path = dest_dir.join(format!("TinyWiiBackupManager-v{}-portable.exe", version));
 
-    let zip = ZipFileReader::new(bytes).await?;
-    let exe_i = zip
-        .file()
-        .entries()
-        .iter()
-        .position(|e| {
-            e.filename()
-                .as_str()
-                .is_ok_and(|name| name == "TinyWiiBackupManager.exe")
-        })
-        .ok_or(anyhow!("Failed to find TinyWiiBackupManager.exe"))?;
+    let mut archive = ZipArchive::new(bytes)?;
+    let mut exe = archive.by_name("TinyWiiBackupManager.exe")?;
 
     if dest_path.exists() {
-        fs::remove_file(&dest_path).await?;
+        fs::remove_file(&dest_path)?;
     }
-    let mut file = File::create(&dest_path).await?;
-    let mut exe = zip.reader_without_entry(exe_i).await?;
-    io::copy(&mut exe, &mut file).await?;
+    fs::write(dest_path, exe)?;
 
     Ok((version, dest_path))
 }
 
-pub async fn get_latest_version() -> Result<String> {
+pub fn get_latest_version() -> Result<String> {
     const VERSION_URL: &str =
         "https://github.com/mq1/TinyWiiBackupManager/releases/latest/download/version.txt";
 

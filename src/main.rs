@@ -121,7 +121,7 @@ impl State {
             Message::Download(version, os, arch) => {
                 *self = State::Downloading(version.clone());
                 Task::perform(
-                    util::download(version, os, arch).map_err(|e| e.to_string()),
+                    async move || { util::download(version, os, arch) }.map_err(|e| e.to_string()),
                     Message::Downloaded,
                 )
             }
@@ -129,7 +129,7 @@ impl State {
                 Ok((version, bytes)) => {
                     *self = State::Installing(version.clone());
                     Task::perform(
-                        util::install(version, bytes).map_err(|e| e.to_string()),
+                        async move || { util::install(version, bytes) }.map_err(|e| e.to_string()),
                         Message::Installed,
                     )
                 }
@@ -158,8 +158,10 @@ impl State {
                 if let Some(dest_dir) = dest_dir {
                     *self = State::Downloading(version.clone());
                     Task::perform(
-                        util::download_to_dir(version, os, arch, dest_dir)
-                            .map_err(|e| e.to_string()),
+                        async move || {
+                            { util::download_to_dir(version, os, arch, dest_dir) }
+                                .map_err(|e| e.to_string())
+                        },
                         Message::DownloadedPortable,
                     )
                 } else {
@@ -196,10 +198,6 @@ impl State {
 }
 
 fn main() -> iced::Result {
-    unsafe {
-        env::set_var("SMOL_THREADS", "1");
-    }
-
     iced::application(State::new, State::update, State::view)
         .window_size(Size::new(500.0, 300.0))
         .resizable(false)

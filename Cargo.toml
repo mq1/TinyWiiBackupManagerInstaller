@@ -13,7 +13,7 @@ LegalCopyright = "Copyright © 2026 Manuel Quarneti. Licensed under GPL-3.0-only
 
 [dependencies]
 iced = { version = "0.14", default-features = false, features = [
-  "smol",
+  "thread-pool",
   "tiny-skia",
 ] }
 anyhow = "1"
@@ -21,9 +21,10 @@ mslnk = "0.1"
 directories = "6"
 windows-registry = "0.6"
 native-dialog = "0.9"
-smol = "2"
 minreq = { version = "2.14", features = ["https-rustls"] }
-async_zip = { version = "0.0.18", features = ["deflate"] }
+zip = { version = "7.2", default-features = false, features = [
+  "deflate-flate2-zlib-rs",
+] }
 
 [build-dependencies]
 winresource = "0.1"
