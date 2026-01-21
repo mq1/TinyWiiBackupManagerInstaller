@@ -5,6 +5,9 @@
 !include "WinVer.nsh"
 !include "x64.nsh"
 !include "LogicLib.nsh"
+!include "FileFunc.nsh"
+
+!insertmacro TrimNewLines
 
 ;--------------------------------
 ; General
@@ -36,9 +39,8 @@
   !insertmacro MUI_PAGE_INSTFILES
   
   ; Customize the Finish Page
-  !define MUI_FINISHPAGE_NOAUTOCLOSE ; Keep the install log visible until user clicks next
   !define MUI_FINISHPAGE_RUN "$INSTDIR\TinyWiiBackupManager.exe"
-  !define MUI_FINISHPAGE_RUN_TEXT "Launch App"
+  !define MUI_FINISHPAGE_RUN_TEXT "Launch TinyWiiBackupManager"
   
   ; This text box will show the user exactly what was downloaded
   !define MUI_FINISHPAGE_TEXT "Installation Complete.$\r$\n$\r$\nINSTALLED BUILD DETAILS:$\r$\n-----------------------------$\r$\nVersion:      v$VersionString$\r$\nOS Type:      $OsTag$\r$\nArchitecture: $ArchTag$\r$\n$\r$\nClick Finish to close this wizard."
@@ -70,7 +72,10 @@ Section "Install" SecInstall
   FileOpen $0 "$PLUGINSDIR\version.txt" r
   FileRead $0 $VersionString
   FileClose $0
-  
+
+  ; Clean the version string to remove hidden newlines
+  ${TrimNewLines} "$VersionString" $VersionString
+
   DetailPrint "Latest Version: $VersionString"
 
   ; Detect OS and Architecture Logic
@@ -147,13 +152,6 @@ Section "Install" SecInstall
   CreateShortcut "$SMPROGRAMS\TinyWiiBackupManager\TinyWiiBackupManager.lnk" "$INSTDIR\TinyWiiBackupManager.exe"
   CreateShortcut "$SMPROGRAMS\TinyWiiBackupManager\Uninstall.lnk" "$INSTDIR\uninstall.exe"
   CreateShortcut "$DESKTOP\TinyWiiBackupManager.lnk" "$INSTDIR\TinyWiiBackupManager.exe"
-
-  ; Final confirmation log
-  DetailPrint "------------------------------------------------"
-  DetailPrint "SUCCESSFULLY INSTALLED:"
-  DetailPrint "Version: $VersionString"
-  DetailPrint "Variant: $OsTag / $ArchTag"
-  DetailPrint "------------------------------------------------"
 
 SectionEnd
 
