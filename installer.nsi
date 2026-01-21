@@ -25,6 +25,8 @@
   
   !insertmacro MUI_PAGE_WELCOME
   !insertmacro MUI_PAGE_INSTFILES
+  !define MUI_FINISHPAGE_RUN "$INSTDIR\TinyWiiBackupManager.exe"
+  !define MUI_FINISHPAGE_RUN_TEXT "Launch TinyWiiBackupManager"
   !insertmacro MUI_PAGE_FINISH
   
   !insertmacro MUI_UNPAGE_CONFIRM
