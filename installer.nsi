@@ -18,21 +18,6 @@
   InstallDir "$LOCALAPPDATA\TinyWiiBackupManager"
 
 ;--------------------------------
-; Interface
-
-  !define MUI_ABORTWARNING
-  !define MUI_ICON "${NSISDIR}\Contrib\Graphics\Icons\modern-install.ico"
-  
-  !insertmacro MUI_PAGE_WELCOME
-  !insertmacro MUI_PAGE_INSTFILES
-  !insertmacro MUI_PAGE_FINISH
-  
-  !insertmacro MUI_UNPAGE_CONFIRM
-  !insertmacro MUI_UNPAGE_INSTFILES
-  
-  !insertmacro MUI_LANGUAGE "English"
-
-;--------------------------------
 ; Variables
 
   Var VersionString
@@ -40,6 +25,30 @@
   Var ArchTag
   Var DownloadUrl
   Var ZipPath
+
+;--------------------------------
+; Interface
+
+  !define MUI_ABORTWARNING
+  !define MUI_ICON "${NSISDIR}\Contrib\Graphics\Icons\modern-install.ico"
+  
+  !insertmacro MUI_PAGE_WELCOME
+  !insertmacro MUI_PAGE_INSTFILES
+  
+  ; Customize the Finish Page
+  !define MUI_FINISHPAGE_NOAUTOCLOSE ; Keep the install log visible until user clicks next
+  !define MUI_FINISHPAGE_RUN "$INSTDIR\TinyWiiBackupManager.exe"
+  !define MUI_FINISHPAGE_RUN_TEXT "Launch App"
+  
+  ; This text box will show the user exactly what was downloaded
+  !define MUI_FINISHPAGE_TEXT "Installation Complete.$\r$\n$\r$\nINSTALLED BUILD DETAILS:$\r$\n-----------------------------$\r$\nVersion:      v$VersionString$\r$\nOS Type:      $OsTag$\r$\nArchitecture: $ArchTag$\r$\n$\r$\nClick Finish to close this wizard."
+  
+  !insertmacro MUI_PAGE_FINISH
+  
+  !insertmacro MUI_UNPAGE_CONFIRM
+  !insertmacro MUI_UNPAGE_INSTFILES
+  
+  !insertmacro MUI_LANGUAGE "English"
 
 ;--------------------------------
 ; Installer Section
@@ -108,7 +117,7 @@ Section "Install" SecInstall
   StrCpy $ZipPath "$PLUGINSDIR\app.zip"
   
   ; Download Asset
-  DetailPrint "Downloading: $DownloadUrl"
+  DetailPrint "Downloading: TinyWiiBackupManager-v$VersionString-$OsTag-$ArchTag.zip"
   inetc::get "$DownloadUrl" "$ZipPath" /END
   Pop $0
   StrCmp $0 "OK" download_ok
@@ -138,6 +147,13 @@ Section "Install" SecInstall
   CreateShortcut "$SMPROGRAMS\TinyWiiBackupManager\TinyWiiBackupManager.lnk" "$INSTDIR\TinyWiiBackupManager.exe"
   CreateShortcut "$SMPROGRAMS\TinyWiiBackupManager\Uninstall.lnk" "$INSTDIR\uninstall.exe"
   CreateShortcut "$DESKTOP\TinyWiiBackupManager.lnk" "$INSTDIR\TinyWiiBackupManager.exe"
+
+  ; Final confirmation log
+  DetailPrint "------------------------------------------------"
+  DetailPrint "SUCCESSFULLY INSTALLED:"
+  DetailPrint "Version: $VersionString"
+  DetailPrint "Variant: $OsTag / $ArchTag"
+  DetailPrint "------------------------------------------------"
 
 SectionEnd
 
