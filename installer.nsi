@@ -18,15 +18,6 @@
   InstallDir "$LOCALAPPDATA\TinyWiiBackupManager"
 
 ;--------------------------------
-; Variables
-
-  Var VersionString
-  Var OsTag
-  Var ArchTag
-  Var DownloadUrl
-  Var ZipPath
-
-;--------------------------------
 ; Interface
 
   !define MUI_ABORTWARNING
@@ -34,20 +25,21 @@
   
   !insertmacro MUI_PAGE_WELCOME
   !insertmacro MUI_PAGE_INSTFILES
-  
-  ; Customize the Finish Page
-  !define MUI_FINISHPAGE_RUN "$INSTDIR\TinyWiiBackupManager.exe"
-  !define MUI_FINISHPAGE_RUN_TEXT "Launch TinyWiiBackupManager"
-  
-  ; This text box will show the user exactly what was downloaded
-  !define MUI_FINISHPAGE_TEXT "Installation Complete.$\r$\n$\r$\nINSTALLED BUILD DETAILS:$\r$\n-----------------------------$\r$\nVersion:      v$VersionString$\r$\nOS Type:      $OsTag$\r$\nArchitecture: $ArchTag$\r$\n$\r$\nClick Finish to close this wizard."
-  
   !insertmacro MUI_PAGE_FINISH
   
   !insertmacro MUI_UNPAGE_CONFIRM
   !insertmacro MUI_UNPAGE_INSTFILES
   
   !insertmacro MUI_LANGUAGE "English"
+
+;--------------------------------
+; Variables
+
+  Var VersionString
+  Var OsTag
+  Var ArchTag
+  Var DownloadUrl
+  Var ZipPath
 
 ;--------------------------------
 ; Installer Section
@@ -69,18 +61,7 @@ Section "Install" SecInstall
   FileOpen $0 "$PLUGINSDIR\version.txt" r
   FileRead $0 $VersionString
   FileClose $0
-
-  ; Clean the version string to remove hidden newlines
-  ${Do}
-    StrCpy $1 $VersionString "" -1   ; Get the last character
-    ${If} $1 == "$\r"                ; Check if it is CR
-    ${OrIf} $1 == "$\n"              ; Check if it is LF
-      StrCpy $VersionString $VersionString -1 ; Remove the last character
-    ${Else}
-      ${Break}                       ; Stop loop if valid character found
-    ${EndIf}
-  ${Loop}
-
+  
   DetailPrint "Latest Version: $VersionString"
 
   ; Detect OS and Architecture Logic
@@ -127,7 +108,7 @@ Section "Install" SecInstall
   StrCpy $ZipPath "$PLUGINSDIR\app.zip"
   
   ; Download Asset
-  DetailPrint "Downloading: TinyWiiBackupManager-v$VersionString-$OsTag-$ArchTag.zip"
+  DetailPrint "Downloading: $DownloadUrl"
   inetc::get "$DownloadUrl" "$ZipPath" /END
   Pop $0
   StrCmp $0 "OK" download_ok
