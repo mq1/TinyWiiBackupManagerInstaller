@@ -5,9 +5,6 @@
 !include "WinVer.nsh"
 !include "x64.nsh"
 !include "LogicLib.nsh"
-!include "FileFunc.nsh"
-
-!insertmacro TrimNewLines
 
 ;--------------------------------
 ; General
@@ -74,7 +71,15 @@ Section "Install" SecInstall
   FileClose $0
 
   ; Clean the version string to remove hidden newlines
-  ${TrimNewLines} "$VersionString" $VersionString
+  ${Do}
+    StrCpy $1 $VersionString "" -1   ; Get the last character
+    ${If} $1 == "$\r"                ; Check if it is CR
+    ${OrIf} $1 == "$\n"              ; Check if it is LF
+      StrCpy $VersionString $VersionString -1 ; Remove the last character
+    ${Else}
+      ${Break}                       ; Stop loop if valid character found
+    ${EndIf}
+  ${Loop}
 
   DetailPrint "Latest Version: $VersionString"
 
