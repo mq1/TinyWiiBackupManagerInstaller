@@ -25,12 +25,6 @@
   
   !insertmacro MUI_PAGE_WELCOME
   !insertmacro MUI_PAGE_INSTFILES
-
-  ; Customize the Finish Page
-  !define MUI_FINISHPAGE_NOAUTOCLOSE ; Keep the install log visible until user clicks next
-  !define MUI_FINISHPAGE_RUN "$INSTDIR\TinyWiiBackupManager.exe"
-  !define MUI_FINISHPAGE_RUN_TEXT "Launch TinyWiiBackupManager $VersionString"
-
   !insertmacro MUI_PAGE_FINISH
   
   !insertmacro MUI_UNPAGE_CONFIRM
