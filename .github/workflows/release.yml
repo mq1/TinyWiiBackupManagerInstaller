@@ -21,6 +21,12 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: "21.1.8"
+          force-url: https://github.com/llvm/llvm-project/releases/download/llvmorg-21.1.8/LLVM-21.1.8-win64.exe
+
       - name: Install Rust toolchain
         shell: pwsh
         run: |
@@ -32,8 +38,13 @@ jobs:
         run: cargo build -Z build-std=std,panic_abort -Z build-std-features="optimize_for_size" --release --locked --target i686-win7-windows-msvc
         env:
           RUSTC_BOOTSTRAP: 1
-          CARGO_TARGET_I686_WIN7_WINDOWS_MSVC_LINKER: rust-lld.exe
-          RUSTFLAGS: -C target-feature=+crt-static
+          RUSTFLAGS: -C target-feature=+crt-static -C linker-plugin-lto
+          CC: clang-cl
+          CXX: clang-cl
+          AR: llvm-lib
+          CFLAGS: /clang:-Oz /clang:-flto /clang:-fuse-ld=lld-link
+          CXXFLAGS: /clang:-Oz /clang:-flto /clang:-fuse-ld=lld-link
+          CARGO_TARGET_I686_WIN7_WINDOWS_MSVC_LINKER: lld-link
 
       - name: Upload distributable artifact
         uses: actions/upload-artifact@v4
