@@ -21,36 +21,21 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Install LLVM and Clang
-        uses: KyleMayes/install-llvm-action@v2
-        with:
-          version: "21.1.8"
-          force-url: https://github.com/llvm/llvm-project/releases/download/llvmorg-21.1.8/LLVM-21.1.8-win64.exe
-
-      - name: Install Rust toolchain
+      - name: Install NSIS and Plugins
         shell: pwsh
         run: |
-          rustup toolchain install 1.92 --component rust-src
-          rustup default 1.92
+          choco install nsis
+          Copy-Item "plugins\*" "C:\Program Files (x86)\NSIS\Plugins\x86-unicode"
 
-      - name: Build binary
+      - name: Make NSIS
         shell: pwsh
-        run: cargo build -Z build-std=std,panic_abort -Z build-std-features="optimize_for_size" --release --locked --target i686-win7-windows-msvc
-        env:
-          RUSTC_BOOTSTRAP: 1
-          RUSTFLAGS: -C target-feature=+crt-static -C linker-plugin-lto
-          CC: clang-cl
-          CXX: clang-cl
-          AR: llvm-lib
-          CFLAGS: /clang:-Oz /clang:-flto /clang:-fuse-ld=lld-link
-          CXXFLAGS: /clang:-Oz /clang:-flto /clang:-fuse-ld=lld-link
-          CARGO_TARGET_I686_WIN7_WINDOWS_MSVC_LINKER: lld-link
+        run: makensis /V4 installer.nsi
 
       - name: Upload distributable artifact
         uses: actions/upload-artifact@v4
         with:
           name: dist
-          path: target/i686-win7-windows-msvc/release/TinyWiiBackupManagerInstaller.exe
+          path: TinyWiiBackupManagerInstaller.exe
 
   release:
     name: Create GitHub Release
