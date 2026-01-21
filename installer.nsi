@@ -130,6 +130,21 @@ Section "Install" SecInstall
   ; Create Uninstaller
   WriteUninstaller "$INSTDIR\uninstall.exe"
   
+  ; --------------------------------------------------------
+  ; REGISTER IN CONTROL PANEL (ADD/REMOVE PROGRAMS)
+  ; --------------------------------------------------------
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "DisplayName" "TinyWiiBackupManager"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "DisplayVersion" "$VersionString"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "Publisher" "Manuel Quarneti"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "DisplayIcon" "$INSTDIR\TinyWiiBackupManager.exe"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "InstallLocation" "$INSTDIR"
+  
+  ; Hide Modify/Repair buttons (optional)
+  WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "NoModify" 1
+  WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "NoRepair" 1
+  ; --------------------------------------------------------
+
   ; Create shortcuts
   CreateDirectory "$SMPROGRAMS\TinyWiiBackupManager"
   CreateShortcut "$SMPROGRAMS\TinyWiiBackupManager\TinyWiiBackupManager.lnk" "$INSTDIR\TinyWiiBackupManager.exe"
@@ -142,6 +157,13 @@ SectionEnd
 ; Uninstaller Section
 
 Section "Uninstall"
+  
+  ; --------------------------------------------------------
+  ; REMOVE FROM CONTROL PANEL
+  ; --------------------------------------------------------
+  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager"
+  ; --------------------------------------------------------
+
   ; Remove shortcuts
   RMDir /r "$SMPROGRAMS\TinyWiiBackupManager"
   Delete "$DESKTOP\TinyWiiBackupManager.lnk"
