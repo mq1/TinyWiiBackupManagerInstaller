@@ -172,6 +172,6 @@ Section "Uninstall"
   RMDir /r "$INSTDIR"
 
   ; Remove data directory
-  RMDir /r "$APPDATA\TinyWiiBackupManager"
+  RMDir /r "$APPDATA\mq1\TinyWiiBackupManager"
 
 SectionEnd
