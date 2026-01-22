@@ -24,12 +24,13 @@ jobs:
       - name: Install NSIS and Plugins
         shell: pwsh
         run: |
-          choco install nsis
-          Copy-Item "plugins\*" "C:\Program Files (x86)\NSIS\Plugins\x86-unicode"
+          Invoke-WebRequest -Uri https://sourceforge.net/projects/nsis/files/NSIS%203/3.11/nsis-3.11.zip/download -OutFile nsis-3.11.zip -UserAgent "NativeHost"
+          Expand-Archive -Path nsis-3.11.zip -DestinationPath .
+          Copy-Item "plugins\*" "nsis-3.11\Plugins\x86-unicode"
 
       - name: Make NSIS
         shell: pwsh
-        run: '& "C:\Program Files (x86)\NSIS\makensis.exe" /V4 installer.nsi'
+        run: .\nsis-3.11\makensis.exe installer.nsi
 
       - name: Upload distributable artifact
         uses: actions/upload-artifact@v4
