@@ -1,10 +1,10 @@
 # TinyWiiBackupManagerInstaller
 
-A (very) simple windows (un)installer for TinyWiiBackupManager
+:down_arrow: A (very) simple windows (un)installer for TinyWiiBackupManager
 
-Automatically installs the right version for your Windows version and CPU architecture
+:zap: Automatically installs the right version for your Windows version and CPU architecture
 
-## Using
+## :heart: Powered by
 
 - NSIS: https://nsis.sourceforge.io/License
 - Inetc: https://nsis.sourceforge.io/Inetc_plug-in
@@ -12,5 +12,5 @@ Automatically installs the right version for your Windows version and CPU archit
 
 ---
 
-GPL-3.0-only
+:page_facing_up: GPL-3.0-only
 
