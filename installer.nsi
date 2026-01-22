@@ -18,6 +18,15 @@
   InstallDir "$LOCALAPPDATA\TinyWiiBackupManager"
 
 ;--------------------------------
+; Variables
+
+  Var VersionString
+  Var OsTag
+  Var ArchTag
+  Var DownloadUrl
+  Var ZipPath
+
+;--------------------------------
 ; Interface
 
   !define MUI_ABORTWARNING
@@ -25,7 +34,7 @@
   
   !insertmacro MUI_PAGE_WELCOME
   !insertmacro MUI_PAGE_INSTFILES
-  !define MUI_FINISHPAGE_NOAUTOCLOSE ; Keep the install log visible until user clicks next
+  !define MUI_FINISHPAGE_TEXT "Successfully installed TinyWiiBackupManager-v$VersionString-$OsTag-$ArchTag"
   !define MUI_FINISHPAGE_RUN "$INSTDIR\TinyWiiBackupManager.exe"
   !define MUI_FINISHPAGE_RUN_TEXT "Launch TinyWiiBackupManager"
   !insertmacro MUI_PAGE_FINISH
@@ -36,15 +45,6 @@
   !insertmacro MUI_LANGUAGE "English"
 
 ;--------------------------------
-; Variables
-
-  Var VersionString
-  Var OsTag
-  Var ArchTag
-  Var DownloadUrl
-  Var ZipPath
-
-;--------------------------------
 ; Installer Section
 
 Section "Install" SecInstall
@@ -52,6 +52,7 @@ Section "Install" SecInstall
   InitPluginsDir
   
   ; Fetch Version String
+  DetailPrint "Fetching latest version..."
   inetc::get /QUIET "https://github.com/mq1/TinyWiiBackupManager/releases/latest/download/version.txt" "$PLUGINSDIR\version.txt"
   Pop $0
   StrCmp $0 "OK" version_ok
@@ -81,8 +82,10 @@ Section "Install" SecInstall
         
         ${If} $0 != 0
             StrCpy $ArchTag "x86_64-v3"
+            DetailPrint "CPU supports AVX2: Selecting v3 build"
         ${Else}
             StrCpy $ArchTag "x86_64"
+            DetailPrint "Standard x64 detected"
         ${EndIf}
     ${Else}
         StrCpy $ArchTag "x86"
@@ -101,20 +104,23 @@ Section "Install" SecInstall
     ${EndIf}
   ${EndIf}
   
-  DetailPrint "Detected Arch: $ArchTag"
+  DetailPrint "Selected Arch: $ArchTag"
 
   ; Construct Download URL
   StrCpy $DownloadUrl "https://github.com/mq1/TinyWiiBackupManager/releases/download/v$VersionString/TinyWiiBackupManager-v$VersionString-$OsTag-$ArchTag.zip"
   StrCpy $ZipPath "$PLUGINSDIR\app.zip"
   
   ; Download Asset
-  DetailPrint "Downloading: TinyWiiBackupManager-v$VersionString-$OsTag-$ArchTag.zip"
+  DetailPrint "Downloading: $DownloadUrl"
   inetc::get "$DownloadUrl" "$ZipPath" /END
   Pop $0
   StrCmp $0 "OK" download_ok
     MessageBox MB_OK|MB_ICONSTOP "Failed to download application asset.$\nServer returned: $0"
     Abort
   download_ok:
+
+  ; Extract using nsisunz
+  DetailPrint "Extracting..."
 
   ; Ensure install dir exists before unzipping
   CreateDirectory "$INSTDIR"
