@@ -77,15 +77,24 @@ Section "Install" SecInstall
     ${If} ${IsNativeARM64}
         StrCpy $ArchTag "arm64"
     ${ElseIf} ${IsNativeAMD64}
-        ; Check for AVX2 support (PF_AVX2_INSTRUCTIONS_AVAILABLE = 40)
+        ; 1. Check for AVX2 support (PF_AVX2_INSTRUCTIONS_AVAILABLE = 40) -> v3
         System::Call "kernel32::IsProcessorFeaturePresent(i 40) i .r0"
         
         ${If} $0 != 0
             StrCpy $ArchTag "x86_64-v3"
             DetailPrint "CPU supports AVX2: Selecting v3 build"
         ${Else}
-            StrCpy $ArchTag "x86_64"
-            DetailPrint "Standard x64 detected"
+            ; 2. Check for SSE4.2 support (PF_SSE4_2_INSTRUCTIONS_AVAILABLE = 38) -> v2
+            System::Call "kernel32::IsProcessorFeaturePresent(i 38) i .r0"
+            
+            ${If} $0 != 0
+                StrCpy $ArchTag "x86_64-v2"
+                DetailPrint "CPU supports SSE4.2: Selecting v2 build"
+            ${Else}
+                ; 3. Fallback to generic x64 -> v1
+                StrCpy $ArchTag "x86_64"
+                DetailPrint "Standard x64 detected"
+            ${EndIf}
         ${EndIf}
     ${Else}
         StrCpy $ArchTag "x86"
@@ -96,7 +105,6 @@ Section "Install" SecInstall
     StrCpy $OsTag "windows7"
     DetailPrint "Detected Windows 7/8/8.1"
     
-    ; Win7 builds in your list are only x86 or x86_64 (no v3, no arm64)
     ${If} ${IsNativeAMD64}
         StrCpy $ArchTag "x86_64"
     ${Else}
