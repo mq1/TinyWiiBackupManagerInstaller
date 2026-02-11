@@ -102,7 +102,7 @@ Section "Install" SecInstall
 
   ${Else}
     ; --- Windows 7/8/8.1 Logic ---
-    StrCpy $OsTag "windows7"
+    StrCpy $OsTag "windows-legacy"
     DetailPrint "Detected Windows 7/8/8.1"
     
     ${If} ${IsNativeAMD64}
