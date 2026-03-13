@@ -9,7 +9,6 @@ on:
       - "v*.*.*"
     paths:
       - "installer.nsi"
-      - "plugins/*"
   pull_request:
 
 permissions:
