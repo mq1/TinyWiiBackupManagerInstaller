@@ -20,11 +20,15 @@ var
   Version: AnsiString;
   DownloadUrl: AnsiString;
 
-begin:
-  DownloadTemporaryFile('https://github.com/mq1/TinyWiiBackupManager/releases/latest/download/version.txt', 'version.txt', '', nil);
-  LoadStringFromFile(ExpandConstant('{tmp}\version.txt'), Version);
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssInstall then
+  begin
+    DownloadTemporaryFile('https://github.com/mq1/TinyWiiBackupManager/releases/latest/download/version.txt', 'version.txt', '', nil);
+    LoadStringFromFile(ExpandConstant('{tmp}\version.txt'), Version);
 
-  DownloadUrl := 'https://github.com/mq1/TinyWiiBackupManager/releases/download/v' + Version + '/TinyWiiBackupManager-v' + Version + '-windows-x86_64.zip';
-  DownloadTemporaryFile(DownloadUrl, 'TinyWiiBackupManager.zip', '', nil);
-  ExtractArchive(ExpandConstant('{tmp}\TinyWiiBackupManager.zip'), ExpandConstant('{app}'), '', true, nil);
+    DownloadUrl := 'https://github.com/mq1/TinyWiiBackupManager/releases/download/v' + Version + '/TinyWiiBackupManager-v' + Version + '-windows-x86_64.zip';
+    DownloadTemporaryFile(DownloadUrl, 'TinyWiiBackupManager.zip', '', nil);
+    ExtractArchive(ExpandConstant('{tmp}\TinyWiiBackupManager.zip'), ExpandConstant('{app}'), '', true, nil);
+  end;
 end;
