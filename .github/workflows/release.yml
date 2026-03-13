@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - dev
     tags:
       - "v*.*.*"
     paths:
@@ -24,19 +25,27 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Install NSIS and Plugins
-        shell: pwsh
-        run: |
-          Invoke-WebRequest -Uri https://sourceforge.net/projects/nsis/files/NSIS%203/3.11/nsis-3.11.zip/download -OutFile nsis-3.11.zip -UserAgent "NativeHost"
-          Expand-Archive -Path nsis-3.11.zip -DestinationPath .
-          Copy-Item "plugins\*" "nsis-3.11\Plugins\x86-unicode"
+      - name: Install NSIS
+        uses: negrutiu/nsis-install@v2
+        with:
+          distro: official
+          arch: x86
 
-      - name: Make NSIS
-        shell: pwsh
-        run: .\nsis-3.11\makensis.exe installer.nsi
+      - name: Install `Inetc` from web
+        uses: negrutiu/nsis-install-plugin@v1
+        with:
+          url: https://nsis.sourceforge.io/mediawiki/images/c/c9/Inetc.zip
+
+      - name: Install `Nsisunz` from web
+        uses: negrutiu/nsis-install-plugin@v1
+        with:
+          url: https://nsis.sourceforge.io/mediawiki/images/5/5a/NSISunzU.zip
+
+      - name: Build installer
+        run: makensis.exe installer.nsi
 
       - name: Upload distributable artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dist
           path: TinyWiiBackupManagerInstaller.exe
@@ -48,7 +57,7 @@ jobs:
     needs: [build]
     steps:
       - name: Download distributables
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist
@@ -61,4 +70,3 @@ jobs:
           prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
