@@ -12,7 +12,7 @@
   Name "TinyWiiBackupManager"
   BrandingText "TinyWiiBackupManager Installer"
   OutFile "TinyWiiBackupManagerInstaller.exe"
-  SetCompressor /SOLID /FINAL lzma
+  SetCompressor /SOLID /FINAL bzip2
   
   ; User Mode Install (No Admin)
   RequestExecutionLevel user
