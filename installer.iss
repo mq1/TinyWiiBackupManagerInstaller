@@ -28,5 +28,5 @@ begin:
 
   DownloadUrl := 'https://github.com/mq1/TinyWiiBackupManager/releases/download/v' + Version + '/TinyWiiBackupManager-v' + Version + '-windows-x86_64.zip';
   DownloadTemporaryFile(DownloadUrl, 'TinyWiiBackupManager.zip', '', nil);
-  ExtractArchive(ExpandConstant('{tmp}\TinyWiiBackupManager.zip'), ExpandConstant('{app}\TinyWiiBackupManager'), '', true, nil);
+  ExtractArchive(ExpandConstant('{tmp}\TinyWiiBackupManager.zip'), ExpandConstant('{app}'), '', true, nil);
 end;
