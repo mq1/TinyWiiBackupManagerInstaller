@@ -14,8 +14,6 @@ DefaultGroupName=TinyWiiBackupManager
 UninstallDisplayIcon={app}\TinyWiiBackupManager.exe
 PrivilegesRequired=lowest
 OutputBaseFilename=TinyWiiBackupManagerInstaller
-NoModify=yes
-NoRepair=yes
 
 [Code]
 var
