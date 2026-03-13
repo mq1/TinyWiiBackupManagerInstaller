@@ -5,11 +5,10 @@
 
 ## :heart: Powered by
 
-- NSIS: https://nsis.sourceforge.io/License
-- Inetc: https://nsis.sourceforge.io/Inetc_plug-in
-- Nsisunz: https://nsis.sourceforge.io/Nsisunz_plug-in
+- NSIS: <https://nsis.sourceforge.io/License>
+- NScurl: <https://github.com/negrutiu/nsis-nscurl>
+- Nsisunz: <https://nsis.sourceforge.io/Nsisunz_plug-in>
 
 ---
 
 :page_facing_up: GPL-3.0-only
-

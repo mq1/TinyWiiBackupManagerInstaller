@@ -53,7 +53,7 @@ Section "Install" SecInstall
   
   ; Fetch Version String
   DetailPrint "Fetching latest version..."
-  inetc::get /QUIET "https://github.com/mq1/TinyWiiBackupManager/releases/latest/download/version.txt" "$PLUGINSDIR\version.txt"
+  NScurl::http GET "https://github.com/mq1/TinyWiiBackupManager/releases/latest/download/version.txt" "$PLUGINSDIR\version.txt" /INSIST /CANCEL /RESUME /END
   Pop $0
   StrCmp $0 "OK" version_ok
     MessageBox MB_OK|MB_ICONSTOP "Failed to fetch version info. Check internet connection."
@@ -116,11 +116,10 @@ Section "Install" SecInstall
 
   ; Construct Download URL
   StrCpy $DownloadUrl "https://github.com/mq1/TinyWiiBackupManager/releases/download/v$VersionString/TinyWiiBackupManager-v$VersionString-$OsTag-$ArchTag.zip"
-  StrCpy $ZipPath "$PLUGINSDIR\app.zip"
   
   ; Download Asset
   DetailPrint "Downloading: $DownloadUrl"
-  inetc::get "$DownloadUrl" "$ZipPath" /END
+  NScurl::http GET "$DownloadUrl" "$PLUGINSDIR\app.zip" /INSIST /CANCEL /RESUME /END
   Pop $0
   StrCmp $0 "OK" download_ok
     MessageBox MB_OK|MB_ICONSTOP "Failed to download application asset.$\nServer returned: $0"
@@ -134,7 +133,7 @@ Section "Install" SecInstall
   CreateDirectory "$INSTDIR"
   
   ; Syntax: nsisunz::Unzip "SourceFile" "DestinationDir"
-  nsisunz::Unzip "$ZipPath" "$INSTDIR"
+  nsisunz::Unzip "$PLUGINSDIR\app.zip" "$INSTDIR"
   Pop $0
   StrCmp $0 "success" extract_ok
     MessageBox MB_OK|MB_ICONSTOP "Failed to unzip application.$\nError: $0"
