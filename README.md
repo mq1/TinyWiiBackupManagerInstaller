@@ -11,5 +11,5 @@
 
 ---
 
-:page_facing_up: GPL-3.0-only
+:page_facing_up: MIT OR Apache-2.0
 
