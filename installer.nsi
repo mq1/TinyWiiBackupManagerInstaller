@@ -12,7 +12,6 @@
   Name "TinyWiiBackupManager"
   BrandingText "TinyWiiBackupManager Installer"
   OutFile "TinyWiiBackupManagerInstaller.exe"
-  SetCompress off
   
   ; User Mode Install (No Admin)
   RequestExecutionLevel user
