@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - main
+      - inno
     tags:
       - "v*.*.*"
     paths:
-      - "installer.nsi"
-      - "plugins/*"
+      - "installer.iss"
   pull_request:
 
 permissions:
@@ -24,19 +24,13 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Install NSIS and Plugins
-        shell: pwsh
-        run: |
-          Invoke-WebRequest -Uri https://sourceforge.net/projects/nsis/files/NSIS%203/3.11/nsis-3.11.zip/download -OutFile nsis-3.11.zip -UserAgent "NativeHost"
-          Expand-Archive -Path nsis-3.11.zip -DestinationPath .
-          Copy-Item "plugins\*" "nsis-3.11\Plugins\x86-unicode"
-
-      - name: Make NSIS
-        shell: pwsh
-        run: .\nsis-3.11\makensis.exe installer.nsi
+      - name: Compile .ISS to .EXE Installer
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.7
+        with:
+          path: installer.iss
 
       - name: Upload distributable artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dist
           path: TinyWiiBackupManagerInstaller.exe
@@ -61,4 +55,3 @@ jobs:
           prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
