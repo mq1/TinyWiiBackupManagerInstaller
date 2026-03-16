@@ -58,7 +58,7 @@ Section "Install" SecInstall
     Abort
   version_ok:
   Pop $Version
-  DetailPrint "Version: $Version"
+  DetailPrint "Latest version: v$Version"
   
   ; Detect Platform and Arch Logic
   
@@ -102,7 +102,7 @@ Section "Install" SecInstall
   
   ; Construct zip file name
   StrCpy $ZipName "TinyWiiBackupManager-v$Version-$Platform-$Arch.zip"
-  DetailPrint "ZipName: $ZipName"
+  DetailPrint "Downloading $ZipName"
   
   ; Download Asset
   inetc::get "https://github.com/mq1/TinyWiiBackupManager/releases/download/v$Version/$ZipName" "$PLUGINSDIR\$ZipName" /END
@@ -116,7 +116,7 @@ Section "Install" SecInstall
   CreateDirectory "$INSTDIR"
   
   ; Extract zip
-  nsisunz::Unzip "$ZipPath" "$INSTDIR"
+  nsisunz::Unzip "$PLUGINSDIR\$ZipName" "$INSTDIR"
   Pop $0
   StrCmp $0 "success" extract_ok
     MessageBox MB_OK|MB_ICONSTOP "Failed to unzip application.$\nError: $0"
