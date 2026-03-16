@@ -20,11 +20,10 @@
 ;--------------------------------
 ; Variables
 
-  Var VersionString
-  Var OsTag
-  Var ArchTag
-  Var DownloadUrl
-  Var ZipPath
+  Var Version
+  Var Platform
+  Var Arch
+  Var ZipName
 
 ;--------------------------------
 ; Interface
@@ -34,7 +33,7 @@
   
   !insertmacro MUI_PAGE_WELCOME
   !insertmacro MUI_PAGE_INSTFILES
-  !define MUI_FINISHPAGE_TEXT "Successfully installed TinyWiiBackupManager-v$VersionString-$OsTag-$ArchTag"
+  !define MUI_FINISHPAGE_TEXT "Successfully installed TinyWiiBackupManager-v$Version-$Platform-$Arch"
   !define MUI_FINISHPAGE_RUN "$INSTDIR\TinyWiiBackupManager.exe"
   !define MUI_FINISHPAGE_RUN_TEXT "Launch TinyWiiBackupManager"
   !insertmacro MUI_PAGE_FINISH
@@ -52,89 +51,72 @@ Section "Install" SecInstall
   InitPluginsDir
   
   ; Fetch Version String
-  DetailPrint "Fetching latest version..."
-  inetc::get /QUIET "https://github.com/mq1/TinyWiiBackupManager/releases/latest/download/version.txt" "$PLUGINSDIR\version.txt"
+  inetc::get /TOSTACK "https://github.com/mq1/TinyWiiBackupManager/releases/latest/download/version.txt" "" /END
   Pop $0
   StrCmp $0 "OK" version_ok
     MessageBox MB_OK|MB_ICONSTOP "Failed to fetch version info. Check internet connection."
     Abort
   version_ok:
+  Pop $Version
+  DetailPrint "Latest version: v$Version"
   
-  ; Read version from file
-  FileOpen $0 "$PLUGINSDIR\version.txt" r
-  FileRead $0 $VersionString
-  FileClose $0
-  
-  DetailPrint "Latest Version: $VersionString"
-
-  ; Detect OS and Architecture Logic
+  ; Detect Platform and Arch Logic
   
   ${If} ${AtLeastWin10}
     ; --- Windows 10+ Logic ---
-    StrCpy $OsTag "windows"
-    DetailPrint "Detected Windows 10+"
+    StrCpy $Platform "windows"
 
     ${If} ${IsNativeARM64}
-        StrCpy $ArchTag "arm64"
+        StrCpy $Arch "arm64"
     ${ElseIf} ${IsNativeAMD64}
         ; 1. Check for AVX2 support (PF_AVX2_INSTRUCTIONS_AVAILABLE = 40) -> v3
         System::Call "kernel32::IsProcessorFeaturePresent(i 40) i .r0"
         
         ${If} $0 != 0
-            StrCpy $ArchTag "x86_64-v3"
-            DetailPrint "CPU supports AVX2: Selecting v3 build"
+            StrCpy $Arch "x86_64-v3"
         ${Else}
             ; 2. Check for SSE4.2 support (PF_SSE4_2_INSTRUCTIONS_AVAILABLE = 38) -> v2
             System::Call "kernel32::IsProcessorFeaturePresent(i 38) i .r0"
             
             ${If} $0 != 0
-                StrCpy $ArchTag "x86_64-v2"
-                DetailPrint "CPU supports SSE4.2: Selecting v2 build"
+                StrCpy $Arch "x86_64-v2"
             ${Else}
                 ; 3. Fallback to generic x64 -> v1
-                StrCpy $ArchTag "x86_64"
-                DetailPrint "Standard x64 detected"
+                StrCpy $Arch "x86_64"
             ${EndIf}
         ${EndIf}
     ${Else}
-        StrCpy $ArchTag "x86"
+        StrCpy $Arch "x86"
     ${EndIf}
 
   ${Else}
     ; --- Windows 7/8/8.1 Logic ---
-    StrCpy $OsTag "windows-legacy"
-    DetailPrint "Detected Windows 7/8/8.1"
+    StrCpy $Platform "windows-legacy"
     
     ${If} ${IsNativeAMD64}
-        StrCpy $ArchTag "x86_64"
+        StrCpy $Arch "x86_64"
     ${Else}
-        StrCpy $ArchTag "x86"
+        StrCpy $Arch "x86"
     ${EndIf}
   ${EndIf}
   
-  DetailPrint "Selected Arch: $ArchTag"
-
-  ; Construct Download URL
-  StrCpy $DownloadUrl "https://github.com/mq1/TinyWiiBackupManager/releases/download/v$VersionString/TinyWiiBackupManager-v$VersionString-$OsTag-$ArchTag.zip"
-  StrCpy $ZipPath "$PLUGINSDIR\app.zip"
+  ; Construct zip file name
+  StrCpy $ZipName "TinyWiiBackupManager-v$Version-$Platform-$Arch.zip"
+  DetailPrint "Downloading $ZipName"
   
   ; Download Asset
-  DetailPrint "Downloading: $DownloadUrl"
-  inetc::get "$DownloadUrl" "$ZipPath" /END
+  inetc::get "https://github.com/mq1/TinyWiiBackupManager/releases/download/v$Version/$ZipName" "$PLUGINSDIR\$ZipName" /END
   Pop $0
   StrCmp $0 "OK" download_ok
     MessageBox MB_OK|MB_ICONSTOP "Failed to download application asset.$\nServer returned: $0"
     Abort
   download_ok:
 
-  ; Extract using nsisunz
-  DetailPrint "Extracting..."
-
   ; Ensure install dir exists before unzipping
   CreateDirectory "$INSTDIR"
   
-  ; Syntax: nsisunz::Unzip "SourceFile" "DestinationDir"
-  nsisunz::Unzip "$ZipPath" "$INSTDIR"
+  ; Extract zip
+  nsisunz::Unzip "$PLUGINSDIR\$ZipName" "$INSTDIR"
   Pop $0
   StrCmp $0 "success" extract_ok
     MessageBox MB_OK|MB_ICONSTOP "Failed to unzip application.$\nError: $0"
@@ -148,7 +130,7 @@ Section "Install" SecInstall
   ; REGISTER IN CONTROL PANEL (ADD/REMOVE PROGRAMS)
   ; --------------------------------------------------------
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "DisplayName" "TinyWiiBackupManager"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "DisplayVersion" "$VersionString"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "DisplayVersion" "$Version"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "Publisher" "Manuel Quarneti"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "DisplayIcon" "$INSTDIR\TinyWiiBackupManager.exe"
