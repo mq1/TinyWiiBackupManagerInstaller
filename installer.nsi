@@ -103,7 +103,7 @@ Section "Install" SecInstall
   StrCpy $ZipName "TinyWiiBackupManager-v$Version-$Platform-$Arch.zip"
   
   ; Download Asset
-  inetc::get "https://github.com/mq1/TinyWiiBackupManager/releases/download/v$Version/$ZipName" "$PLUGINSDIR\$ZipName" /END
+  inetc::get "https://github.com/mq1/TinyWiiBackupManager/releases/download/v$Version/$ZipName" "$PLUGINSDIR\$ZipName"
   Pop $0
   StrCmp $0 "OK" download_ok
     MessageBox MB_OK|MB_ICONSTOP "Failed to download application asset.$\nServer returned: $0"
