@@ -51,7 +51,7 @@ Section "Install" SecInstall
   InitPluginsDir
   
   ; Fetch Version String
-  inetc::get /TOSTACK "https://github.com/mq1/TinyWiiBackupManager/releases/latest/download/version.txt"
+  inetc::get /TOSTACK "https://github.com/mq1/TinyWiiBackupManager/releases/latest/download/version.txt" "" /END
   Pop $0
   StrCmp $0 "OK" version_ok
     MessageBox MB_OK|MB_ICONSTOP "Failed to fetch version info. Check internet connection."
