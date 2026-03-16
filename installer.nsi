@@ -58,6 +58,7 @@ Section "Install" SecInstall
     Abort
   version_ok:
   Pop $Version
+  DetailPrint "Version: $Version"
   
   ; Detect Platform and Arch Logic
   
@@ -101,6 +102,7 @@ Section "Install" SecInstall
   
   ; Construct zip file name
   StrCpy $ZipName "TinyWiiBackupManager-v$Version-$Platform-$Arch.zip"
+  DetailPrint "ZipName: $ZipName"
   
   ; Download Asset
   inetc::get "https://github.com/mq1/TinyWiiBackupManager/releases/download/v$Version/$ZipName" "$PLUGINSDIR\$ZipName" /END
