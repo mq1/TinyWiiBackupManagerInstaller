@@ -65,6 +65,7 @@ Section "Install" SecInstall
   ; Detect Platform and Arch
   ; ------------------------
   
+  ClearErrors
   ReadRegDWORD $0 HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion" "CurrentMajorVersionNumber"
   IfErrors windows_legacy
   
