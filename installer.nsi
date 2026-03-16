@@ -51,7 +51,7 @@ Section "Install" SecInstall
   InitPluginsDir
   
   ; Fetch Version String
-  inetc::get /TOSTACK "https://github.com/mq1/TinyWiiBackupManager/releases/latest/download/version.txt" /END
+  inetc::get /TOSTACK "https://github.com/mq1/TinyWiiBackupManager/releases/latest/download/version.txt"
   Pop $0
   StrCmp $0 "OK" version_ok
     MessageBox MB_OK|MB_ICONSTOP "Failed to fetch version info. Check internet connection."
@@ -103,7 +103,7 @@ Section "Install" SecInstall
   StrCpy $ZipName "TinyWiiBackupManager-v$Version-$Platform-$Arch.zip"
   
   ; Download Asset
-  inetc::get "https://github.com/mq1/TinyWiiBackupManager/releases/download/v$Version/$ZipName" "$PLUGINSDIR\$ZipName"
+  inetc::get "https://github.com/mq1/TinyWiiBackupManager/releases/download/v$Version/$ZipName" "$PLUGINSDIR\$ZipName" /END
   Pop $0
   StrCmp $0 "OK" download_ok
     MessageBox MB_OK|MB_ICONSTOP "Failed to download application asset.$\nServer returned: $0"
