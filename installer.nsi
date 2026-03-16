@@ -2,12 +2,10 @@
 ; SPDX-License-Identifier: MIT OR Apache-2.0
 
 !include "MUI2.nsh"
-!include "WinVer.nsh"
-!include "x64.nsh"
-!include "LogicLib.nsh"
 
-;--------------------------------
+;--------
 ; General
+;--------
 
   Name "TinyWiiBackupManager"
   BrandingText "TinyWiiBackupManager Installer"
@@ -17,16 +15,18 @@
   RequestExecutionLevel user
   InstallDir "$LOCALAPPDATA\TinyWiiBackupManager"
 
-;--------------------------------
+;----------
 ; Variables
+;----------
 
   Var Version
   Var Platform
   Var Arch
   Var ZipName
 
-;--------------------------------
+;----------
 ; Interface
+;----------
 
   !define MUI_ABORTWARNING
   !define MUI_ICON "${NSISDIR}\Contrib\Graphics\Icons\modern-install.ico"
@@ -43,8 +43,9 @@
   
   !insertmacro MUI_LANGUAGE "English"
 
-;--------------------------------
+;------------------
 ; Installer Section
+;------------------
 
 Section "Install" SecInstall
   ; Initialize Temp directory
@@ -60,45 +61,67 @@ Section "Install" SecInstall
   Pop $Version
   DetailPrint "Latest version: v$Version"
   
-  ; Detect Platform and Arch Logic
+  ; ------------------------
+  ; Detect Platform and Arch
+  ; ------------------------
   
-  ${If} ${AtLeastWin10}
+  ReadRegDWORD $0 HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion" "CurrentMajorVersionNumber"
+  IfErrors windows_legacy
+  
+  windows:
     ; --- Windows 10+ Logic ---
     StrCpy $Platform "windows"
+    
+    ; Because the installer is 32-bit, WOW64 forces PROCESSOR_ARCHITECTURE to "x86".
+    ; The REAL host architecture is stored in PROCESSOR_ARCHITEW6432.
+    ReadEnvStr $0 "PROCESSOR_ARCHITEW6432"
+    
+    StrCmp $0 "ARM64" windows_arm64
+    StrCmp $0 "AMD64" windows_amd64
+    
+    ; Fallback to native x86 (if PROCESSOR_ARCHITEW6432 is empty)
+    StrCpy $Arch "x86"
+    Goto arch_done
 
-    ${If} ${IsNativeARM64}
-        StrCpy $Arch "arm64"
-    ${ElseIf} ${IsNativeAMD64}
-        ; 1. Check for AVX2 support (PF_AVX2_INSTRUCTIONS_AVAILABLE = 40) -> v3
-        System::Call "kernel32::IsProcessorFeaturePresent(i 40) i .r0"
-        
-        ${If} $0 != 0
-            StrCpy $Arch "x86_64-v3"
-        ${Else}
-            ; 2. Check for SSE4.2 support (PF_SSE4_2_INSTRUCTIONS_AVAILABLE = 38) -> v2
-            System::Call "kernel32::IsProcessorFeaturePresent(i 38) i .r0"
-            
-            ${If} $0 != 0
-                StrCpy $Arch "x86_64-v2"
-            ${Else}
-                ; 3. Fallback to generic x64 -> v1
-                StrCpy $Arch "x86_64"
-            ${EndIf}
-        ${EndIf}
-    ${Else}
-        StrCpy $Arch "x86"
-    ${EndIf}
+    windows_arm64:
+      StrCpy $Arch "arm64"
+      Goto arch_done
 
-  ${Else}
+    windows_amd64:
+      ; 1. Check for AVX2 support (PF_AVX2_INSTRUCTIONS_AVAILABLE = 40) -> v3
+      System::Call "kernel32::IsProcessorFeaturePresent(i 40) i .r0"
+      IntCmp $0 0 windows_check_sse
+      StrCpy $Arch "x86_64-v3"
+      Goto arch_done
+      
+      windows_check_sse:
+      ; 2. Check for SSE4.2 support (PF_SSE4_2_INSTRUCTIONS_AVAILABLE = 38) -> v2
+      System::Call "kernel32::IsProcessorFeaturePresent(i 38) i .r0"
+      IntCmp $0 0 windows_fallback_x64
+      StrCpy $Arch "x86_64-v2"
+      Goto arch_done
+      
+      windows_fallback_x64:
+      ; 3. Fallback to generic x64 -> v1
+      StrCpy $Arch "x86_64"
+      Goto arch_done
+
+  windows_legacy:
     ; --- Windows 7/8/8.1 Logic ---
     StrCpy $Platform "windows-legacy"
     
-    ${If} ${IsNativeAMD64}
-        StrCpy $Arch "x86_64"
-    ${Else}
-        StrCpy $Arch "x86"
-    ${EndIf}
-  ${EndIf}
+    ReadEnvStr $0 "PROCESSOR_ARCHITEW6432"
+    
+    StrCmp $0 "AMD64" windows_legacy_amd64
+    
+    StrCpy $Arch "x86"
+    Goto arch_done
+    
+    windows_legacy_amd64:
+      StrCpy $Arch "x86_64"
+      Goto arch_done
+
+  arch_done:
   
   ; Construct zip file name
   StrCpy $ZipName "TinyWiiBackupManager-v$Version-$Platform-$Arch.zip"
