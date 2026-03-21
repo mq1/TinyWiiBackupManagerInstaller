@@ -2,6 +2,9 @@
 ; SPDX-License-Identifier: MIT OR Apache-2.0
 
 !include "MUI2.nsh"
+!include "LogicLib.nsh"
+!include "x64.nsh"
+!include "WinVer.nsh"
 
 ;--------
 ; General
@@ -54,10 +57,12 @@ Section "Install" SecInstall
   ; Fetch Version String
   inetc::get /TOSTACK "https://github.com/mq1/TinyWiiBackupManager/releases/latest/download/version.txt" "" /END
   Pop $0
-  StrCmp $0 "OK" version_ok
+  
+  ${If} $0 != "OK"
     MessageBox MB_OK|MB_ICONSTOP "Failed to fetch version info. Check internet connection."
     Abort
-  version_ok:
+  ${EndIf}
+  
   Pop $Version
   DetailPrint "Latest version: v$Version"
   
@@ -65,64 +70,44 @@ Section "Install" SecInstall
   ; Detect Platform and Arch
   ; ------------------------
   
-  ClearErrors
-  ReadRegDWORD $0 HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion" "CurrentMajorVersionNumber"
-  IfErrors windows_legacy
-  
-  windows:
+  ${If} ${AtLeastWin10}
     ; --- Windows 10+ Logic ---
     StrCpy $Platform "windows"
     
-    ; Because the installer is 32-bit, WOW64 forces PROCESSOR_ARCHITECTURE to "x86".
-    ; The REAL host architecture is stored in PROCESSOR_ARCHITEW6432.
-    ReadEnvStr $0 "PROCESSOR_ARCHITEW6432"
-    
-    StrCmp $0 "ARM64" windows_arm64
-    StrCmp $0 "AMD64" windows_amd64
-    
-    ; Fallback to native x86 (if PROCESSOR_ARCHITEW6432 is empty)
-    StrCpy $Arch "x86"
-    Goto arch_done
-
-    windows_arm64:
+    ${If} ${IsNativeARM64}
       StrCpy $Arch "arm64"
-      Goto arch_done
-
-    windows_amd64:
+      
+    ${ElseIf} ${IsNativeAMD64}
       ; 1. Check for AVX2 support (PF_AVX2_INSTRUCTIONS_AVAILABLE = 40) -> v3
       System::Call "kernel32::IsProcessorFeaturePresent(i 40) i .r0"
-      IntCmp $0 0 windows_check_sse
-      StrCpy $Arch "x86_64-v3"
-      Goto arch_done
+      ${If} $0 != 0
+        StrCpy $Arch "x86_64-v3"
+      ${Else}
+        ; 2. Check for SSE4.2 support (PF_SSE4_2_INSTRUCTIONS_AVAILABLE = 38) -> v2
+        System::Call "kernel32::IsProcessorFeaturePresent(i 38) i .r0"
+        ${If} $0 != 0
+          StrCpy $Arch "x86_64-v2"
+        ${Else}
+          ; 3. Fallback to generic x64 -> v1
+          StrCpy $Arch "x86_64"
+        ${EndIf}
+      ${EndIf}
       
-      windows_check_sse:
-      ; 2. Check for SSE4.2 support (PF_SSE4_2_INSTRUCTIONS_AVAILABLE = 38) -> v2
-      System::Call "kernel32::IsProcessorFeaturePresent(i 38) i .r0"
-      IntCmp $0 0 windows_fallback_x64
-      StrCpy $Arch "x86_64-v2"
-      Goto arch_done
-      
-      windows_fallback_x64:
-      ; 3. Fallback to generic x64 -> v1
-      StrCpy $Arch "x86_64"
-      Goto arch_done
-
-  windows_legacy:
+    ${Else}
+      ; Fallback to native x86
+      StrCpy $Arch "x86"
+    ${EndIf}
+    
+  ${Else}
     ; --- Windows 7/8/8.1 Logic ---
     StrCpy $Platform "windows-legacy"
     
-    ReadEnvStr $0 "PROCESSOR_ARCHITEW6432"
-    
-    StrCmp $0 "AMD64" windows_legacy_amd64
-    
-    StrCpy $Arch "x86"
-    Goto arch_done
-    
-    windows_legacy_amd64:
+    ${If} ${IsNativeAMD64}
       StrCpy $Arch "x86_64"
-      Goto arch_done
-
-  arch_done:
+    ${Else}
+      StrCpy $Arch "x86"
+    ${EndIf}
+  ${EndIf}
   
   ; Construct zip file name
   StrCpy $ZipName "TinyWiiBackupManager-v$Version-$Platform-$Arch.zip"
@@ -131,10 +116,11 @@ Section "Install" SecInstall
   ; Download Asset
   inetc::get "https://github.com/mq1/TinyWiiBackupManager/releases/download/v$Version/$ZipName" "$PLUGINSDIR\$ZipName" /END
   Pop $0
-  StrCmp $0 "OK" download_ok
+  
+  ${If} $0 != "OK"
     MessageBox MB_OK|MB_ICONSTOP "Failed to download application asset.$\nServer returned: $0"
     Abort
-  download_ok:
+  ${EndIf}
 
   ; Ensure install dir exists before unzipping
   CreateDirectory "$INSTDIR"
@@ -142,10 +128,11 @@ Section "Install" SecInstall
   ; Extract zip
   nsisunz::Unzip "$PLUGINSDIR\$ZipName" "$INSTDIR"
   Pop $0
-  StrCmp $0 "success" extract_ok
+  
+  ${If} $0 != "success"
     MessageBox MB_OK|MB_ICONSTOP "Failed to unzip application.$\nError: $0"
     Abort
-  extract_ok:
+  ${EndIf}
 
   ; Create Uninstaller
   WriteUninstaller "$INSTDIR\uninstall.exe"
