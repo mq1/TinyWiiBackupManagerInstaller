@@ -11,7 +11,7 @@ Name "TinyWiiBackupManager"
 OutFile "TinyWiiBackupManagerInstaller.exe"
 Unicode True
 InstallDir "$LOCALAPPDATA\TinyWiiBackupManager"
-InstallDirRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" ""
+InstallDirRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "InstallLocation"
 RequestExecutionLevel user
 
 ; Variables
