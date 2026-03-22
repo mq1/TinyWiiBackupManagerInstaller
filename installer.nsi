@@ -6,51 +6,36 @@
 !include "x64.nsh"
 !include "WinVer.nsh"
 
-;--------
 ; General
-;--------
+Name "TinyWiiBackupManager"
+OutFile "TinyWiiBackupManagerInstaller.exe"
+Unicode True
+InstallDir "$LOCALAPPDATA\TinyWiiBackupManager"
+InstallDirRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" ""
+RequestExecutionLevel user
 
-  Name "TinyWiiBackupManager"
-  BrandingText "TinyWiiBackupManager Installer"
-  OutFile "TinyWiiBackupManagerInstaller.exe"
-  
-  ; User Mode Install (No Admin)
-  RequestExecutionLevel user
-  InstallDir "$LOCALAPPDATA\TinyWiiBackupManager"
-
-;----------
 ; Variables
-;----------
+Var Version
+Var Platform
+Var Arch
+Var Asset
 
-  Var Version
-  Var Platform
-  Var Arch
-  Var ZipName
+; Interface Settings
+!define MUI_ABORTWARNING
 
-;----------
-; Interface
-;----------
+; Pages
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_PAGE_FINISH
+!define MUI_FINISHPAGE_TEXT "Successfully installed $Asset"
+!define MUI_FINISHPAGE_RUN "$INSTDIR\TinyWiiBackupManager.exe"
+!insertmacro MUI_UNPAGE_CONFIRM
 
-  !define MUI_ABORTWARNING
-  !define MUI_ICON "${NSISDIR}\Contrib\Graphics\Icons\modern-install.ico"
-  
-  !insertmacro MUI_PAGE_WELCOME
-  !insertmacro MUI_PAGE_INSTFILES
-  !define MUI_FINISHPAGE_TEXT "Successfully installed TinyWiiBackupManager-v$Version-$Platform-$Arch"
-  !define MUI_FINISHPAGE_RUN "$INSTDIR\TinyWiiBackupManager.exe"
-  !define MUI_FINISHPAGE_RUN_TEXT "Launch TinyWiiBackupManager"
-  !insertmacro MUI_PAGE_FINISH
-  
-  !insertmacro MUI_UNPAGE_CONFIRM
-  !insertmacro MUI_UNPAGE_INSTFILES
-  
-  !insertmacro MUI_LANGUAGE "English"
+; Languages
+!insertmacro MUI_LANGUAGE "English"
 
-;------------------
-; Installer Section
-;------------------
 
-Section "Install" SecInstall
+; Installer
+Section
   ; Initialize Temp directory
   InitPluginsDir
   
@@ -109,12 +94,12 @@ Section "Install" SecInstall
     ${EndIf}
   ${EndIf}
   
-  ; Construct zip file name
-  StrCpy $ZipName "TinyWiiBackupManager-v$Version-$Platform-$Arch.zip"
-  DetailPrint "Downloading $ZipName"
+  ; Construct asset file name
+  StrCpy $Asset "TinyWiiBackupManager-v$Version-$Platform-$Arch.zip"
+  DetailPrint "Downloading $Asset"
   
   ; Download Asset
-  inetc::get "https://github.com/mq1/TinyWiiBackupManager/releases/download/v$Version/$ZipName" "$PLUGINSDIR\$ZipName" /END
+  inetc::get "https://github.com/mq1/TinyWiiBackupManager/releases/download/v$Version/$Asset" "$PLUGINSDIR\$Asset" /END
   Pop $0
   
   ${If} $0 != "OK"
@@ -126,7 +111,7 @@ Section "Install" SecInstall
   CreateDirectory "$INSTDIR"
   
   ; Extract zip
-  nsisunz::Unzip "$PLUGINSDIR\$ZipName" "$INSTDIR"
+  nsisunz::Unzip "$PLUGINSDIR\$Asset" "$INSTDIR"
   Pop $0
   
   ${If} $0 != "success"
@@ -137,38 +122,26 @@ Section "Install" SecInstall
   ; Create Uninstaller
   WriteUninstaller "$INSTDIR\uninstall.exe"
   
-  ; --------------------------------------------------------
-  ; REGISTER IN CONTROL PANEL (ADD/REMOVE PROGRAMS)
-  ; --------------------------------------------------------
+  ; Create registry entries
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "DisplayName" "TinyWiiBackupManager"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "DisplayVersion" "$Version"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "Publisher" "Manuel Quarneti"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "DisplayIcon" "$INSTDIR\TinyWiiBackupManager.exe"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "InstallLocation" "$INSTDIR"
-  
-  ; Hide Modify/Repair buttons (optional)
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "NoModify" 1
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager" "NoRepair" 1
-  ; --------------------------------------------------------
 
   ; Create shortcuts
   CreateDirectory "$SMPROGRAMS\TinyWiiBackupManager"
   CreateShortcut "$SMPROGRAMS\TinyWiiBackupManager\TinyWiiBackupManager.lnk" "$INSTDIR\TinyWiiBackupManager.exe"
   CreateShortcut "$DESKTOP\TinyWiiBackupManager.lnk" "$INSTDIR\TinyWiiBackupManager.exe"
-
 SectionEnd
 
-;--------------------------------
-; Uninstaller Section
 
 Section "Uninstall"
-  
-  ; --------------------------------------------------------
-  ; REMOVE FROM CONTROL PANEL
-  ; --------------------------------------------------------
-  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager"
-  ; --------------------------------------------------------
+  ; Remove registry entries
+  DeleteRegKey /ifempty HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager"
 
   ; Remove shortcuts
   RMDir /r "$SMPROGRAMS\TinyWiiBackupManager"
@@ -179,5 +152,4 @@ Section "Uninstall"
 
   ; Remove data directory
   RMDir /r "$APPDATA\mq1\TinyWiiBackupManager"
-
 SectionEnd
