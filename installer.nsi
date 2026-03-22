@@ -145,7 +145,7 @@ SectionEnd
 
 Section "Uninstall"
   ; Remove registry entries
-  DeleteRegKey /ifempty HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager"
+  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TinyWiiBackupManager"
 
   ; Remove shortcuts
   RMDir /r "$SMPROGRAMS\TinyWiiBackupManager"
