@@ -26,10 +26,10 @@ Var Asset
 ; Pages
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
-!insertmacro MUI_PAGE_FINISH
 !define MUI_FINISHPAGE_TEXT "Successfully installed $Asset"
 !define MUI_FINISHPAGE_RUN "$INSTDIR\TinyWiiBackupManager.exe"
 !define MUI_FINISHPAGE_RUN_TEXT "Run TinyWiiBackupManager"
+!insertmacro MUI_PAGE_FINISH
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_UNPAGE_FINISH
