@@ -31,6 +31,8 @@ Var Asset
 !define MUI_FINISHPAGE_RUN "$INSTDIR\TinyWiiBackupManager.exe"
 !define MUI_FINISHPAGE_RUN_TEXT "Run TinyWiiBackupManager"
 !insertmacro MUI_UNPAGE_CONFIRM
+!insertmacro MUI_UNPAGE_INSTFILES
+!insertmacro MUI_UNPAGE_FINISH
 
 ; Languages
 !insertmacro MUI_LANGUAGE "English"
