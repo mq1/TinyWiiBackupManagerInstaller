@@ -35,11 +35,6 @@ jobs:
         with:
           url: https://nsis.sourceforge.io/mediawiki/images/c/c9/Inetc.zip
 
-      - name: Install `Nsisunz` from web
-        uses: negrutiu/nsis-install-plugin@v1
-        with:
-          url: https://nsis.sourceforge.io/mediawiki/images/5/5a/NSISunzU.zip
-
       - name: Build installer
         run: makensis.exe installer.nsi
 

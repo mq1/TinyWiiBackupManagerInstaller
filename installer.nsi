@@ -63,27 +63,18 @@ Section
   ${EndIf}
 
   ; Construct asset file name
-  StrCpy $Asset "TinyWiiBackupManager-v$Version-windows-$Arch.zip"
+  StrCpy $Asset "TinyWiiBackupManager-v$Version-windows-$Arch.exe"
   DetailPrint "Downloading $Asset"
-
-  ; Download Asset
-  inetc::get "https://github.com/mq1/TinyWiiBackupManager/releases/download/v$Version/$Asset" "$PLUGINSDIR\$Asset" /END
-  Pop $0
-
-  ${If} $0 != "OK"
-    MessageBox MB_OK|MB_ICONSTOP "Failed to download application asset.$\nServer returned: $0"
-    Abort
-  ${EndIf}
 
   ; Ensure install dir exists before unzipping
   CreateDirectory "$INSTDIR"
 
-  ; Extract zip
-  nsisunz::Unzip "$PLUGINSDIR\$Asset" "$INSTDIR"
+  ; Download Asset
+  inetc::get "https://github.com/mq1/TinyWiiBackupManager/releases/download/v$Version/$Asset" "$INSTDIR\TinyWiiBackupManager.exe" /END
   Pop $0
 
-  ${If} $0 != "success"
-    MessageBox MB_OK|MB_ICONSTOP "Failed to unzip application.$\nError: $0"
+  ${If} $0 != "OK"
+    MessageBox MB_OK|MB_ICONSTOP "Failed to download application asset.$\nServer returned: $0"
     Abort
   ${EndIf}
 
