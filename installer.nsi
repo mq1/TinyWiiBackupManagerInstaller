@@ -16,7 +16,6 @@ RequestExecutionLevel user
 
 ; Variables
 Var Version
-Var Platform
 Var Arch
 Var Asset
 
@@ -55,13 +54,6 @@ Section
   Pop $Version
   DetailPrint "Latest version: v$Version"
 
-  ; Detect Platform
-  ${If} ${AtLeastWin10}
-    StrCpy $Platform "windows"
-  ${Else}
-    StrCpy $Platform "windows-legacy"
-  ${EndIf}
-
   ; Detect Architecture
   ${If} ${IsNativeARM64}
     StrCpy $Arch "arm64"
@@ -72,7 +64,7 @@ Section
   ${EndIf}
 
   ; Construct asset file name
-  StrCpy $Asset "TinyWiiBackupManager-v$Version-$Platform-$Arch.zip"
+  StrCpy $Asset "TinyWiiBackupManager-v$Version-windows-$Arch.zip"
   DetailPrint "Downloading $Asset"
 
   ; Download Asset
