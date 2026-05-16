@@ -12,4 +12,3 @@
 ---
 
 :page_facing_up: MIT OR Apache-2.0
-
